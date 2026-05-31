@@ -22,19 +22,13 @@ const WELCOME_CHIPS = [
 
 function formatMessage(text) {
   if (!text) return '';
-  // Bold
   let html = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // Headers (### and ##)
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
-  // Bullet lists
   html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
   html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
-  // Numbered lists
   html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-  // Line breaks
   html = html.replace(/\n/g, '<br/>');
-  // Clean up extra br inside lists
   html = html.replace(/<br\/>\s*<li>/g, '<li>');
   html = html.replace(/<\/li>\s*<br\/>/g, '</li>');
   html = html.replace(/<br\/>\s*<\/ul>/g, '</ul>');
@@ -42,13 +36,45 @@ function formatMessage(text) {
   return html;
 }
 
+function renderMessageContent(msg) {
+  // If content is a string, render as HTML
+  if (typeof msg.content === 'string') {
+    return <div className="message-bubble" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />;
+  }
+  // If content is an array (has file attachments), render text + file indicators
+  if (Array.isArray(msg.content)) {
+    return (
+      <div className="message-bubble">
+        {msg.content.map((block, i) => {
+          if (block.type === 'text') {
+            return <div key={i} dangerouslySetInnerHTML={{ __html: formatMessage(block.text) }} />;
+          }
+          if (block.type === 'file_info') {
+            return (
+              <div key={i} className="file-badge">
+                <span className="file-icon">{block.isImage ? '🖼️' : '📄'}</span>
+                <span>{block.fileName}</span>
+              </div>
+            );
+          }
+          return null;
+        })}
+      </div>
+    );
+  }
+  return null;
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [toolStatus, setToolStatus] = useState(null);
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,22 +87,98 @@ export default function ChatPage() {
     }
   }, [input]);
 
+  async function handleFileSelect(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    setUploading(true);
+
+    for (const file of files) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.error) {
+          alert(data.error);
+          continue;
+        }
+
+        setAttachedFiles(prev => [...prev, data]);
+      } catch (err) {
+        alert(`שגיאה בהעלאת ${file.name}: ${err.message}`);
+      }
+    }
+
+    setUploading(false);
+    e.target.value = '';
+  }
+
+  function removeFile(index) {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  }
+
   async function sendMessage(text) {
     const userText = text || input.trim();
-    if (!userText || loading) return;
+    if ((!userText && !attachedFiles.length) || loading) return;
 
-    const userMsg = { role: 'user', content: userText };
+    // Build message content for Claude API
+    const contentBlocks = [];
+    // Display blocks for UI
+    const displayBlocks = [];
+
+    // Add file content
+    for (const file of attachedFiles) {
+      if (file.type === 'image') {
+        // Send image to Claude as image block
+        contentBlocks.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: file.mediaType,
+            data: file.base64,
+          },
+        });
+        displayBlocks.push({ type: 'file_info', fileName: file.fileName, isImage: true });
+      } else if (file.type === 'document') {
+        // Send document text as text block with context
+        const header = `[קובץ מצורף: ${file.fileName}${file.pageCount ? ` (${file.pageCount} עמודים)` : ''}]\n\n`;
+        contentBlocks.push({ type: 'text', text: header + file.content });
+        displayBlocks.push({ type: 'file_info', fileName: file.fileName, isImage: false });
+      }
+    }
+
+    // Add user text
+    const promptText = userText || 'נא לנתח את הקובץ/ים המצורפים. תן סיכום, ציין מה טוב, מה חסר, ומה צריך לשפר.';
+    contentBlocks.push({ type: 'text', text: promptText });
+    if (userText) {
+      displayBlocks.push({ type: 'text', text: userText });
+    } else {
+      displayBlocks.push({ type: 'text', text: 'נתח את הקבצים שהעליתי' });
+    }
+
+    // If no files, simple string content. If files, array content.
+    const apiContent = attachedFiles.length > 0 ? contentBlocks : userText;
+    const displayContent = attachedFiles.length > 0 ? displayBlocks : userText;
+
+    const userMsg = { role: 'user', content: apiContent, _display: displayContent };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput('');
+    setAttachedFiles([]);
     setLoading(true);
     setToolStatus(null);
 
     try {
+      // Send to API — strip _display field
+      const apiMessages = newMessages.map(m => ({ role: m.role, content: m.content }));
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: apiMessages }),
       });
 
       const reader = res.body.getReader();
@@ -151,6 +253,9 @@ export default function ChatPage() {
               אני נועם, המתכנן הפיננסי שלך. אכיר אותך, אבין את המצב המלא,
               ואבנה לך תכנית מקיפה — השקעות, פנסיה, ביטוח, משכנתא ומיסים.
             </p>
+            <p className="upload-hint">
+              📎 אפשר להעלות קבצים — דוח פנסיה, פוליסת ביטוח, תלוש שכר, דוח משכנתא — ואנתח אותם בשבילך
+            </p>
             <div className="welcome-chips">
               {WELCOME_CHIPS.map((chip) => (
                 <button
@@ -170,10 +275,7 @@ export default function ChatPage() {
             <div className="message-avatar">
               {msg.role === 'user' ? '👤' : '💼'}
             </div>
-            <div
-              className="message-bubble"
-              dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
-            />
+            {renderMessageContent({ ...msg, content: msg._display || msg.content })}
           </div>
         ))}
 
@@ -193,21 +295,50 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Attached files preview */}
+      {attachedFiles.length > 0 && (
+        <div className="attached-files">
+          {attachedFiles.map((file, i) => (
+            <div key={i} className="attached-file">
+              <span className="file-icon">{file.type === 'image' ? '🖼️' : '📄'}</span>
+              <span className="file-name">{file.fileName}</span>
+              <button className="file-remove" onClick={() => removeFile(i)}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="input-area">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.csv,.txt,.json"
+          multiple
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+        />
         <div className="input-row">
+          <button
+            className="upload-btn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading || uploading}
+            title="העלה קובץ"
+          >
+            {uploading ? <div className="spinner small" /> : '📎'}
+          </button>
           <textarea
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="ספר לי על ההשקעות שלך..."
+            placeholder="ספר לי על המצב הפיננסי שלך, או העלה קובץ לניתוח..."
             rows={1}
             disabled={loading}
           />
           <button
             className="send-btn"
             onClick={() => sendMessage()}
-            disabled={loading || !input.trim()}
+            disabled={loading || (!input.trim() && !attachedFiles.length)}
           >
             ←
           </button>
