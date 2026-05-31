@@ -129,23 +129,33 @@ export default function ChatPage() {
     if (!files.length) return;
 
     setUploading(true);
-    for (const file of files) {
-      try {
-        const formData = new FormData();
+    try {
+      const formData = new FormData();
+      for (const file of files) {
         formData.append('file', file);
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.error) {
-          alert(data.error);
-          continue;
-        }
-        setAttachedFiles(prev => [...prev, data]);
-      } catch (err) {
-        alert(`שגיאה בהעלאת ${file.name}: ${err.message}`);
       }
+
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.error) {
+        alert(data.error);
+      } else if (data.files) {
+        // Multiple files response
+        const errors = data.files.filter(f => f.error);
+        const successes = data.files.filter(f => !f.error);
+        if (errors.length) {
+          alert(errors.map(e => e.error).join('\n'));
+        }
+        setAttachedFiles(prev => [...prev, ...successes]);
+      } else {
+        // Single file response
+        setAttachedFiles(prev => [...prev, data]);
+      }
+    } catch (err) {
+      alert(`שגיאה בהעלאת קבצים: ${err.message}`);
     }
     setUploading(false);
-    // Focus the textarea so user can type what they need
     textareaRef.current?.focus();
   }
 
@@ -300,7 +310,7 @@ export default function ChatPage() {
           <div className="drop-content">
             <div className="drop-icon">📎</div>
             <div className="drop-text">שחרר קבצים כאן</div>
-            <div className="drop-hint">PDF, תמונות, CSV, TXT</div>
+            <div className="drop-hint">PDF, תמונות, Word, CSV, Excel ועוד — קובץ אחד או כמה</div>
           </div>
         </div>
       )}
@@ -323,7 +333,7 @@ export default function ChatPage() {
               ואבנה לך תכנית מקיפה — השקעות, פנסיה, ביטוח, משכנתא ומיסים.
             </p>
             <p className="upload-hint">
-              📎 אפשר להעלות קבצים — דוח פנסיה, פוליסת ביטוח, תלוש שכר, דוח משכנתא — ואנתח אותם בשבילך
+              📎 גרור קבצים לכאן או לחץ על 📎 — דוח פנסיה, פוליסת ביטוח, תלוש שכר, משכנתא — ואנתח הכל בשבילך
             </p>
             <div className="welcome-chips">
               {WELCOME_CHIPS.map((chip) => (
@@ -381,7 +391,7 @@ export default function ChatPage() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.csv,.txt,.json"
+          accept="*/*"
           multiple
           onChange={handleFileSelect}
           style={{ display: 'none' }}
