@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'יועץ השקעות AI',
-  description: 'צ׳אט חכם לבניית תיק השקעות מותאם אישית',
+  title: 'נועם — מתכנן פיננסי AI',
+  description: 'צ׳אט חכם לתכנון פיננסי מקיף: השקעות, פנסיה, ביטוח, משכנתא ומיסים',
 };
 
 export default function RootLayout({ children }) {

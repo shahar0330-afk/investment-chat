@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0a0a0f; --surface: #14141f; --surface-2: #1e1e2e;
+  --border: #2a2a3e; --text: #e8e8f0; --text-dim: #8888a0;
+  --accent: #6c63ff; --user-bg: #1a1a40; --ai-bg: #1a1f2e;
+  --green: #4ade80; --gold: #fbbf24;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 844px; width: 390px; overflow: hidden; }
+.app { display: flex; flex-direction: column; height: 100%; }
+.header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.header-icon { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #6c63ff, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.header h1 { font-size: 16px; font-weight: 600; }
+.header p { font-size: 11px; color: var(--text-dim); }
+.messages { flex: 1; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.message { display: flex; gap: 8px; max-width: 90%; }
+.message.assistant { align-self: flex-end; flex-direction: row-reverse; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-top: 3px; background: linear-gradient(135deg, var(--accent), #a855f7); }
+.bubble { padding: 12px 14px; border-radius: 14px; line-height: 1.5; font-size: 13px; background: var(--ai-bg); border: 1px solid var(--border); border-top-left-radius: 4px; }
+.bubble strong { color: var(--accent); }
+.bubble .gold { color: var(--gold); font-weight: 600; }
+.bubble .green { color: var(--green); }
+.section { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin: 8px 0; }
+.section h4 { color: var(--gold); font-size: 13px; margin-bottom: 6px; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th { text-align: right; color: var(--gold); padding: 4px 6px; border-bottom: 1px solid var(--border); }
+td { padding: 4px 6px; color: var(--text-dim); }
+td.ticker { color: var(--accent); font-weight: 600; }
+td.pct { color: var(--green); }
+.bar-container { display: flex; gap: 4px; align-items: center; margin: 3px 0; font-size: 11px; }
+.bar { height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: 600; }
+.input-area { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface); }
+.input-row { display: flex; gap: 8px; align-items: center; }
+.input-row input { flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
+.send-btn { width: 40px; height: 40px; border-radius: 50%; border: none; background: linear-gradient(135deg, #6c63ff, #a855f7); color: white; font-size: 18px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="header-icon">📊</div>
+    <div>
+      <h1>נועם — יועץ השקעות AI</h1>
+      <p>בונה לך תיק השקעות מותאם אישית</p>
+    </div>
+  </header>
+  <div class="messages">
+    <div class="message assistant">
+      <div class="avatar">📊</div>
+      <div class="bubble">
+        <strong>הנה התיק שבניתי לך!</strong> 🎉<br><br>
+
+        <div class="section">
+          <h4>📊 הקצאת נכסים</h4>
+          <div class="bar-container">
+            <span style="width:45px">מניות</span>
+            <div class="bar" style="width:180px;background:#6c63ff">70%</div>
+          </div>
+          <div class="bar-container">
+            <span style="width:45px">מדדים</span>
+            <div class="bar" style="width:52px;background:#a855f7">20%</div>
+          </div>
+          <div class="bar-container">
+            <span style="width:45px">אג"ח</span>
+            <div class="bar" style="width:26px;background:#fbbf24">10%</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h4>📈 מניות בודדות — 140,000₪</h4>
+          <table>
+            <tr><th>מניה</th><th>%</th><th>סכום</th><th>סיבה</th></tr>
+            <tr><td class="ticker">NVDA</td><td class="pct">15%</td><td>30K₪</td><td>מלך ה-AI</td></tr>
+            <tr><td class="ticker">MSFT</td><td class="pct">12%</td><td>24K₪</td><td>ענן + AI</td></tr>
+            <tr><td class="ticker">AAPL</td><td class="pct">10%</td><td>20K₪</td><td>מזומן + מותג</td></tr>
+            <tr><td class="ticker">LLY</td><td class="pct">10%</td><td>20K₪</td><td>צמיחה ברפואה</td></tr>
+            <tr><td class="ticker">GOOGL</td><td class="pct">8%</td><td>16K₪</td><td>חיפוש + AI</td></tr>
+            <tr><td class="ticker">V</td><td class="pct">8%</td><td>16K₪</td><td>פיננסים</td></tr>
+            <tr><td class="ticker">AMZN</td><td class="pct">7%</td><td>14K₪</td><td>AWS + קמעונאי</td></tr>
+          </table>
+        </div>
+
+        <div class="section">
+          <h4>📊 מדדים — 40,000₪</h4>
+          <table>
+            <tr><th>ETF</th><th>%</th><th>סכום</th></tr>
+            <tr><td class="ticker">QQQ</td><td class="pct">12%</td><td>24K₪</td></tr>
+            <tr><td class="ticker">VTI</td><td class="pct">8%</td><td>16K₪</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <div class="input-row">
+      <input placeholder="ספר לי על ההשקעות שלך..." />
+      <button class="send-btn">←</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

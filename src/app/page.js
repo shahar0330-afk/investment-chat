@@ -8,13 +8,16 @@ const TOOL_LABELS = {
   get_market_overview: 'סוקר מצב שוק',
   get_sector_stocks: 'סורק מניות בסקטור',
   get_etf_data: 'בודק קרנות סל',
+  calculate_financial_plan: 'מחשב תכנית פיננסית',
 };
 
 const WELCOME_CHIPS = [
-  'יש לי 100,000 ש"ח להשקיע',
-  'אני מאמין גדול בטכנולוגיה',
-  'רוצה תיק שמרני ויציב',
-  'אני חדש בהשקעות, עזור לי',
+  'רוצה לבנות תיק השקעות',
+  'צריך לבדוק את הפנסיה שלי',
+  'חושב לקחת משכנתא',
+  'רוצה לדעת כמה מס אני משלם',
+  'צריך ביטוח חיים?',
+  'איך מתכננים פרישה?',
 ];
 
 function formatMessage(text) {
@@ -132,10 +135,10 @@ export default function ChatPage() {
   return (
     <div className="app">
       <header className="header">
-        <div className="header-icon">📊</div>
+        <div className="header-icon">💼</div>
         <div className="header-info">
-          <h1>נועם — יועץ השקעות AI</h1>
-          <p>בונה לך תיק השקעות מותאם אישית</p>
+          <h1>נועם — מתכנן פיננסי AI</h1>
+          <p>השקעות • פנסיה • ביטוח • משכנתא • מיסים</p>
         </div>
       </header>
 
@@ -143,10 +146,10 @@ export default function ChatPage() {
         {!hasMessages && (
           <div className="welcome">
             <div className="welcome-icon">💼</div>
-            <h2>בוא נבנה לך תיק השקעות</h2>
+            <h2>בוא נסדר לך את הפיננסים</h2>
             <p>
-              אני נועם, יועץ ההשקעות שלך. אכיר אותך, אבין מה חשוב לך,
-              ואבנה לך תיק מניות, אג"ח ומדדים — מותאם בדיוק בשבילך.
+              אני נועם, המתכנן הפיננסי שלך. אכיר אותך, אבין את המצב המלא,
+              ואבנה לך תכנית מקיפה — השקעות, פנסיה, ביטוח, משכנתא ומיסים.
             </p>
             <div className="welcome-chips">
               {WELCOME_CHIPS.map((chip) => (
@@ -165,7 +168,7 @@ export default function ChatPage() {
         {messages.map((msg, i) => (
           <div key={i} className={`message ${msg.role}`}>
             <div className="message-avatar">
-              {msg.role === 'user' ? '👤' : '📊'}
+              {msg.role === 'user' ? '👤' : '💼'}
             </div>
             <div
               className="message-bubble"
