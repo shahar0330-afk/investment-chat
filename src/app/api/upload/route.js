@@ -1,8 +1,9 @@
 import pdfParse from 'pdf-parse';
+import { NextResponse } from 'next/server';
 
-export const config = {
-  api: { bodyParser: false },
-};
+// Allow larger file uploads (up to 20MB)
+export const maxDuration = 30;
+export const dynamic = 'force-dynamic';
 
 async function processFile(file) {
   const fileName = file.name;
@@ -40,9 +41,8 @@ async function processFile(file) {
     };
   }
 
-  // Word docs — extract what we can
-  if (['doc', 'docx'].includes(ext) || fileType.includes('word') || fileType.includes('openxmlformats-officedocument')) {
-    // Try to extract text from docx (it's a zip with XML)
+  // Word docs
+  if (['doc', 'docx'].includes(ext) || fileType.includes('word') || fileType.includes('openxmlformats-officedocument.wordprocessing')) {
     try {
       const text = buffer.toString('utf-8').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 100000);
       return { type: 'document', fileName, content: text.length > 100 ? text : '[לא ניתן לחלץ טקסט מקובץ Word — נא להמיר ל-PDF]' };
@@ -56,13 +56,12 @@ async function processFile(file) {
     return { type: 'document', fileName, content: '[קובץ Excel — נא להמיר ל-CSV או PDF לניתוח מיטבי]' };
   }
 
-  // Text-based files — broad matching
+  // Text-based files
   if (
     fileType.startsWith('text/') ||
     fileType === 'application/json' ||
     fileType === 'application/csv' ||
     fileType === 'application/xml' ||
-    fileType === 'application/javascript' ||
     ['csv', 'txt', 'json', 'xml', 'html', 'htm', 'md', 'log', 'rtf', 'yaml', 'yml', 'tsv'].includes(ext)
   ) {
     return {
@@ -75,9 +74,9 @@ async function processFile(file) {
   // Fallback — try to read as text
   try {
     const text = buffer.toString('utf-8');
-    // Check if it's actually readable text (not binary garbage)
-    const printable = text.slice(0, 500).replace(/[^\x20-\x7E\u0590-\u05FF\u0600-\u06FF\n\r\t]/g, '');
-    if (printable.length > text.slice(0, 500).length * 0.5) {
+    const sample = text.slice(0, 500);
+    const printable = sample.replace(/[^\x20-\x7E\u0590-\u05FF\u0600-\u06FF\n\r\t]/g, '');
+    if (printable.length > sample.length * 0.5) {
       return { type: 'document', fileName, content: text.slice(0, 100000) };
     }
   } catch {}
@@ -88,29 +87,25 @@ async function processFile(file) {
 export async function POST(request) {
   try {
     const formData = await request.formData();
-
-    // Support multiple files — check for 'files' (multiple) and 'file' (single)
     const files = formData.getAll('file');
 
     if (!files.length) {
-      return Response.json({ error: 'לא הועלו קבצים' }, { status: 400 });
+      return NextResponse.json({ error: 'לא הועלו קבצים' }, { status: 400 });
     }
 
-    // Process all files in parallel
     const results = await Promise.all(files.map(f => processFile(f)));
 
-    // If single file, return single result (backward compatible)
     if (results.length === 1) {
-      if (results[0].error) {
-        return Response.json({ error: results[0].error }, { status: 400 });
+      if (results[0].error && !results[0].type) {
+        return NextResponse.json({ error: results[0].error }, { status: 400 });
       }
-      return Response.json(results[0]);
+      return NextResponse.json(results[0]);
     }
 
-    // Multiple files — return array
-    return Response.json({ files: results });
+    return NextResponse.json({ files: results });
 
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Upload error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
