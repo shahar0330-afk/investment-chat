@@ -1,9 +1,14 @@
-import pdfParse from 'pdf-parse';
 import { NextResponse } from 'next/server';
 
-// Allow larger file uploads (up to 20MB)
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
+
+async function parsePDF(buffer) {
+  // Dynamic import to avoid Vercel bundling issues
+  const pdfParse = (await import('pdf-parse')).default;
+  const pdf = await pdfParse(buffer);
+  return { text: pdf.text, numpages: pdf.numpages };
+}
 
 async function processFile(file) {
   const fileName = file.name;
@@ -15,7 +20,7 @@ async function processFile(file) {
   // PDF
   if (fileType === 'application/pdf' || ext === 'pdf') {
     try {
-      const pdf = await pdfParse(buffer);
+      const pdf = await parsePDF(buffer);
       return {
         type: 'document',
         fileName,
@@ -23,7 +28,7 @@ async function processFile(file) {
         content: pdf.text.slice(0, 100000),
       };
     } catch (e) {
-      return { type: 'document', fileName, content: '[שגיאה בקריאת PDF]', error: e.message };
+      return { type: 'document', fileName, content: `[שגיאה בקריאת PDF: ${e.message}]` };
     }
   }
 
@@ -106,6 +111,6 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: `שגיאה בעיבוד הקובץ: ${error.message}` }, { status: 500 });
   }
 }
