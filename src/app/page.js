@@ -72,9 +72,11 @@ export default function ChatPage() {
   const [toolStatus, setToolStatus] = useState(null);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const dragCounter = useRef(0);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -87,32 +89,68 @@ export default function ChatPage() {
     }
   }, [input]);
 
-  async function handleFileSelect(e) {
-    const files = Array.from(e.target.files);
+  // Drag and drop handlers
+  function handleDragEnter(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes('Files')) {
+      setDragging(true);
+    }
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setDragging(false);
+    }
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  async function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+    dragCounter.current = 0;
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length) {
+      await uploadFiles(files);
+    }
+  }
+
+  async function uploadFiles(files) {
     if (!files.length) return;
 
     setUploading(true);
-
     for (const file of files) {
       try {
         const formData = new FormData();
         formData.append('file', file);
-
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         const data = await res.json();
-
         if (data.error) {
           alert(data.error);
           continue;
         }
-
         setAttachedFiles(prev => [...prev, data]);
       } catch (err) {
         alert(`שגיאה בהעלאת ${file.name}: ${err.message}`);
       }
     }
-
     setUploading(false);
+    // Focus the textarea so user can type what they need
+    textareaRef.current?.focus();
+  }
+
+  async function handleFileSelect(e) {
+    await uploadFiles(Array.from(e.target.files));
     e.target.value = '';
   }
 
@@ -234,8 +272,39 @@ export default function ChatPage() {
 
   const hasMessages = messages.length > 0;
 
+  // Handle paste with files
+  function handlePaste(e) {
+    const items = Array.from(e.clipboardData?.items || []);
+    const files = items
+      .filter(item => item.kind === 'file')
+      .map(item => item.getAsFile())
+      .filter(Boolean);
+    if (files.length) {
+      e.preventDefault();
+      uploadFiles(files);
+    }
+  }
+
   return (
-    <div className="app">
+    <div
+      className={`app ${dragging ? 'dragging' : ''}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onPaste={handlePaste}
+    >
+      {/* Drop overlay */}
+      {dragging && (
+        <div className="drop-overlay">
+          <div className="drop-content">
+            <div className="drop-icon">📎</div>
+            <div className="drop-text">שחרר קבצים כאן</div>
+            <div className="drop-hint">PDF, תמונות, CSV, TXT</div>
+          </div>
+        </div>
+      )}
+
       <header className="header">
         <div className="header-icon">💼</div>
         <div className="header-info">
