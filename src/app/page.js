@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import './globals.css';
 
 const TOOL_LABELS = {
@@ -20,6 +20,21 @@ const WELCOME_CHIPS = [
   'איך מתכננים פרישה?',
 ];
 
+// ─── Helpers ───
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function getChatTitle(messages) {
+  const firstUser = messages.find(m => m.role === 'user');
+  if (!firstUser) return 'שיחה חדשה';
+  const text = typeof firstUser.content === 'string'
+    ? firstUser.content
+    : firstUser._display?.find(b => b.type === 'text')?.text || 'שיחה חדשה';
+  return text.slice(0, 40) + (text.length > 40 ? '...' : '');
+}
+
 function formatMessage(text) {
   if (!text) return '';
   let html = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -37,26 +52,20 @@ function formatMessage(text) {
 }
 
 function renderMessageContent(msg) {
-  // If content is a string, render as HTML
   if (typeof msg.content === 'string') {
     return <div className="message-bubble" dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />;
   }
-  // If content is an array (has file attachments), render text + file indicators
   if (Array.isArray(msg.content)) {
     return (
       <div className="message-bubble">
         {msg.content.map((block, i) => {
-          if (block.type === 'text') {
-            return <div key={i} dangerouslySetInnerHTML={{ __html: formatMessage(block.text) }} />;
-          }
-          if (block.type === 'file_info') {
-            return (
-              <div key={i} className="file-badge">
-                <span className="file-icon">{block.isImage ? '🖼️' : '📄'}</span>
-                <span>{block.fileName}</span>
-              </div>
-            );
-          }
+          if (block.type === 'text') return <div key={i} dangerouslySetInnerHTML={{ __html: formatMessage(block.text) }} />;
+          if (block.type === 'file_info') return (
+            <div key={i} className="file-badge">
+              <span className="file-icon">{block.isImage ? '🖼️' : '📄'}</span>
+              <span>{block.fileName}</span>
+            </div>
+          );
           return null;
         })}
       </div>
@@ -65,23 +74,63 @@ function renderMessageContent(msg) {
   return null;
 }
 
+// ─── Storage helpers ───
+
+function loadFromStorage(key, fallback) {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const val = localStorage.getItem(key);
+    return val ? JSON.parse(val) : fallback;
+  } catch { return fallback; }
+}
+
+function saveToStorage(key, value) {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+}
+
+// ─── Component ───
+
 export default function ChatPage() {
-  const [messages, setMessages] = useState([]);
+  const [userName, setUserName] = useState(null);
+  const [nameInput, setNameInput] = useState('');
+  const [chats, setChats] = useState({});
+  const [activeChatId, setActiveChatId] = useState(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [toolStatus, setToolStatus] = useState(null);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const dragCounter = useRef(0);
 
+  // Load user and chats from localStorage
+  useEffect(() => {
+    setUserName(loadFromStorage('noam_user_name', null));
+    setChats(loadFromStorage('noam_chats', {}));
+    setActiveChatId(loadFromStorage('noam_active_chat', null));
+  }, []);
+
+  // Save chats
+  useEffect(() => {
+    if (Object.keys(chats).length > 0) saveToStorage('noam_chats', chats);
+  }, [chats]);
+
+  useEffect(() => {
+    if (activeChatId) saveToStorage('noam_active_chat', activeChatId);
+  }, [activeChatId]);
+
+  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, toolStatus]);
+  }, [chats, activeChatId, toolStatus]);
 
+  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -89,146 +138,144 @@ export default function ChatPage() {
     }
   }, [input]);
 
-  // Drag and drop handlers
-  function handleDragEnter(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter.current++;
-    if (e.dataTransfer.types.includes('Files')) {
-      setDragging(true);
+  const messages = activeChatId && chats[activeChatId] ? chats[activeChatId].messages : [];
+
+  function updateChatMessages(chatId, msgs) {
+    setChats(prev => ({
+      ...prev,
+      [chatId]: {
+        ...prev[chatId],
+        messages: msgs,
+        title: getChatTitle(msgs),
+        updatedAt: Date.now(),
+      },
+    }));
+  }
+
+  function handleSaveName() {
+    if (!nameInput.trim()) return;
+    const name = nameInput.trim();
+    setUserName(name);
+    saveToStorage('noam_user_name', name);
+  }
+
+  function startNewChat() {
+    const id = generateId();
+    setChats(prev => ({
+      ...prev,
+      [id]: { id, title: 'שיחה חדשה', messages: [], createdAt: Date.now(), updatedAt: Date.now() },
+    }));
+    setActiveChatId(id);
+    setSidebarOpen(false);
+    setInput('');
+    setAttachedFiles([]);
+  }
+
+  function deleteChat(id) {
+    setChats(prev => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    if (activeChatId === id) {
+      const remaining = Object.keys(chats).filter(k => k !== id);
+      setActiveChatId(remaining.length > 0 ? remaining[0] : null);
     }
   }
 
-  function handleDragLeave(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter.current--;
-    if (dragCounter.current === 0) {
-      setDragging(false);
-    }
+  function switchChat(id) {
+    setActiveChatId(id);
+    setSidebarOpen(false);
+    setAttachedFiles([]);
   }
 
-  function handleDragOver(e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  async function handleDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(false);
-    dragCounter.current = 0;
-
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length) {
-      await uploadFiles(files);
-    }
-  }
+  // ─── File handling ───
 
   async function uploadFiles(files) {
     if (!files.length) return;
-
     setUploading(true);
     try {
       const formData = new FormData();
-      for (const file of files) {
-        formData.append('file', file);
-      }
-
+      for (const file of files) formData.append('file', file);
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
-
-      if (data.error) {
-        alert(data.error);
-      } else if (data.files) {
-        // Multiple files response
+      if (data.error) { alert(data.error); }
+      else if (data.files) {
         const errors = data.files.filter(f => f.error);
         const successes = data.files.filter(f => !f.error);
-        if (errors.length) {
-          alert(errors.map(e => e.error).join('\n'));
-        }
+        if (errors.length) alert(errors.map(e => e.error).join('\n'));
         setAttachedFiles(prev => [...prev, ...successes]);
       } else {
-        // Single file response
         setAttachedFiles(prev => [...prev, data]);
       }
-    } catch (err) {
-      alert(`שגיאה בהעלאת קבצים: ${err.message}`);
-    }
+    } catch (err) { alert(`שגיאה: ${err.message}`); }
     setUploading(false);
     textareaRef.current?.focus();
   }
 
-  async function handleFileSelect(e) {
-    await uploadFiles(Array.from(e.target.files));
-    e.target.value = '';
+  function handleFileSelect(e) { uploadFiles(Array.from(e.target.files)); e.target.value = ''; }
+  function removeFile(index) { setAttachedFiles(prev => prev.filter((_, i) => i !== index)); }
+
+  // Drag & drop
+  function handleDragEnter(e) { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (e.dataTransfer.types.includes('Files')) setDragging(true); }
+  function handleDragLeave(e) { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) setDragging(false); }
+  function handleDragOver(e) { e.preventDefault(); e.stopPropagation(); }
+  function handleDrop(e) { e.preventDefault(); e.stopPropagation(); setDragging(false); dragCounter.current = 0; uploadFiles(Array.from(e.dataTransfer.files)); }
+  function handlePaste(e) {
+    const files = Array.from(e.clipboardData?.items || []).filter(i => i.kind === 'file').map(i => i.getAsFile()).filter(Boolean);
+    if (files.length) { e.preventDefault(); uploadFiles(files); }
   }
 
-  function removeFile(index) {
-    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
-  }
+  // ─── Send message ───
 
   async function sendMessage(text) {
     const userText = text || input.trim();
     if ((!userText && !attachedFiles.length) || loading) return;
 
-    // Build message content for Claude API
+    // Ensure there's an active chat
+    let chatId = activeChatId;
+    if (!chatId) {
+      chatId = generateId();
+      setChats(prev => ({
+        ...prev,
+        [chatId]: { id: chatId, title: 'שיחה חדשה', messages: [], createdAt: Date.now(), updatedAt: Date.now() },
+      }));
+      setActiveChatId(chatId);
+    }
+
     const contentBlocks = [];
-    // Display blocks for UI
     const displayBlocks = [];
 
-    // Add file content
     for (const file of attachedFiles) {
       if (file.type === 'image') {
-        // Send image to Claude as image block
-        contentBlocks.push({
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: file.mediaType,
-            data: file.base64,
-          },
-        });
+        contentBlocks.push({ type: 'image', source: { type: 'base64', media_type: file.mediaType, data: file.base64 } });
         displayBlocks.push({ type: 'file_info', fileName: file.fileName, isImage: true });
       } else if (file.type === 'document') {
-        // Send document text as text block with context
-        const header = `[קובץ מצורף: ${file.fileName}${file.pageCount ? ` (${file.pageCount} עמודים)` : ''}]\n\n`;
-        contentBlocks.push({ type: 'text', text: header + file.content });
+        contentBlocks.push({ type: 'text', text: `[קובץ: ${file.fileName}${file.pageCount ? ` (${file.pageCount} עמודים)` : ''}]\n\n${file.content}` });
         displayBlocks.push({ type: 'file_info', fileName: file.fileName, isImage: false });
       }
     }
 
-    // Add user text
-    const promptText = userText || 'נא לנתח את הקובץ/ים המצורפים. תן סיכום, ציין מה טוב, מה חסר, ומה צריך לשפר.';
+    const promptText = userText || 'נא לנתח את הקבצים המצורפים. תן סיכום, מה טוב, מה חסר, ומה צריך לשפר.';
     contentBlocks.push({ type: 'text', text: promptText });
-    if (userText) {
-      displayBlocks.push({ type: 'text', text: userText });
-    } else {
-      displayBlocks.push({ type: 'text', text: 'נתח את הקבצים שהעליתי' });
-    }
+    displayBlocks.push({ type: 'text', text: userText || 'נתח את הקבצים שהעליתי' });
 
-    // If no files, simple string content. If files, array content.
     const apiContent = attachedFiles.length > 0 ? contentBlocks : userText;
     const displayContent = attachedFiles.length > 0 ? displayBlocks : userText;
-
     const userMsg = { role: 'user', content: apiContent, _display: displayContent };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+
+    const currentMessages = chats[chatId]?.messages || [];
+    const newMessages = [...currentMessages, userMsg];
+    updateChatMessages(chatId, newMessages);
+
     setInput('');
     setAttachedFiles([]);
     setLoading(true);
     setToolStatus(null);
 
     try {
-      // Send to API — strip _display field
       const apiMessages = newMessages.map(m => ({ role: m.role, content: m.content }));
-
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages }),
-      });
-
+      const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: apiMessages }) });
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -237,7 +284,6 @@ export default function ChatPage() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n\n');
         buffer = lines.pop() || '';
@@ -246,27 +292,18 @@ export default function ChatPage() {
           if (!line.startsWith('data: ')) continue;
           try {
             const data = JSON.parse(line.slice(6));
-
             if (data.type === 'text') {
               assistantText += data.content;
-              setMessages([...newMessages, { role: 'assistant', content: assistantText }]);
+              updateChatMessages(chatId, [...newMessages, { role: 'assistant', content: assistantText }]);
               setToolStatus(null);
-            } else if (data.type === 'tool_call') {
-              setToolStatus(TOOL_LABELS[data.name] || data.name);
-            } else if (data.type === 'tool_done') {
-              setToolStatus(null);
-            } else if (data.type === 'done') {
-              setToolStatus(null);
-            } else if (data.type === 'error') {
-              setMessages([...newMessages, { role: 'assistant', content: `שגיאה: ${data.content}` }]);
-            }
-          } catch (e) {
-            // ignore parse errors
-          }
+            } else if (data.type === 'tool_call') { setToolStatus(TOOL_LABELS[data.name] || data.name); }
+            else if (data.type === 'tool_done' || data.type === 'done') { setToolStatus(null); }
+            else if (data.type === 'error') { updateChatMessages(chatId, [...newMessages, { role: 'assistant', content: `שגיאה: ${data.content}` }]); }
+          } catch {}
         }
       }
     } catch (err) {
-      setMessages([...newMessages, { role: 'assistant', content: `שגיאה בחיבור: ${err.message}` }]);
+      updateChatMessages(chatId, [...newMessages, { role: 'assistant', content: `שגיאה: ${err.message}` }]);
     }
 
     setLoading(false);
@@ -274,153 +311,182 @@ export default function ChatPage() {
   }
 
   function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   }
 
-  const hasMessages = messages.length > 0;
+  // ─── Sorted chats ───
+  const sortedChats = Object.values(chats).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const userInitial = userName ? userName.charAt(0).toUpperCase() : '?';
 
-  // Handle paste with files
-  function handlePaste(e) {
-    const items = Array.from(e.clipboardData?.items || []);
-    const files = items
-      .filter(item => item.kind === 'file')
-      .map(item => item.getAsFile())
-      .filter(Boolean);
-    if (files.length) {
-      e.preventDefault();
-      uploadFiles(files);
-    }
+  // ─── Name modal ───
+  if (userName === null) {
+    return null; // Loading from localStorage
+  }
+
+  if (!userName) {
+    return (
+      <div className="name-modal-overlay">
+        <div className="name-modal">
+          <h2>שלום! 👋</h2>
+          <p>אני נועם, המתכנן הפיננסי שלך. איך קוראים לך?</p>
+          <input
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+            placeholder="השם שלך"
+            autoFocus
+          />
+          <button onClick={handleSaveName} disabled={!nameInput.trim()}>בוא נתחיל</button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div
-      className={`app ${dragging ? 'dragging' : ''}`}
+      className="layout"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onPaste={handlePaste}
     >
-      {/* Drop overlay */}
       {dragging && (
         <div className="drop-overlay">
           <div className="drop-content">
             <div className="drop-icon">📎</div>
             <div className="drop-text">שחרר קבצים כאן</div>
-            <div className="drop-hint">PDF, תמונות, Word, CSV, Excel ועוד — קובץ אחד או כמה</div>
+            <div className="drop-hint">PDF, Word, Excel, תמונות ועוד</div>
           </div>
         </div>
       )}
 
-      <header className="header">
-        <div className="header-icon">✦</div>
-        <div className="header-info">
-          <h1>נועם</h1>
-          <p>מתכנן פיננסי AI</p>
+      {/* Mobile toggle */}
+      <button className="sidebar-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <div className="sidebar-brand-icon">✦</div>
+            <span>נועם</span>
+          </div>
+          <button className="new-chat-btn" onClick={startNewChat} title="שיחה חדשה">+</button>
         </div>
-      </header>
 
-      <div className="messages">
-        {!hasMessages && (
-          <div className="welcome">
-            <div className="welcome-icon">✦</div>
-            <h2>בוא נסדר לך את הפיננסים</h2>
-            <p>
-              אני נועם, המתכנן הפיננסי שלך. אכיר אותך, אבין את המצב המלא,
-              ואבנה לך תכנית מקיפה — השקעות, פנסיה, ביטוח, משכנתא ומיסים.
-            </p>
-            <p className="upload-hint">
-              📎 גרור קבצים לכאן או לחץ על 📎 — דוח פנסיה, פוליסת ביטוח, תלוש שכר, משכנתא — ואנתח הכל בשבילך
-            </p>
-            <div className="welcome-chips">
-              {WELCOME_CHIPS.map((chip) => (
-                <button
-                  key={chip}
-                  className="chip"
-                  onClick={() => sendMessage(chip)}
-                >
-                  {chip}
-                </button>
-              ))}
+        <div className="chat-list">
+          {sortedChats.length === 0 && (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-faint)', fontSize: 13 }}>
+              אין שיחות עדיין
             </div>
-          </div>
-        )}
-
-        {messages.map((msg, i) => (
-          <div key={i} className={`message ${msg.role}`}>
-            <div className="message-avatar">
-              {msg.role === 'user' ? '👤' : '✦'}
-            </div>
-            {renderMessageContent({ ...msg, content: msg._display || msg.content })}
-          </div>
-        ))}
-
-        {toolStatus && (
-          <div className="tool-indicator">
-            <div className="spinner" />
-            {toolStatus}...
-          </div>
-        )}
-
-        {loading && !toolStatus && messages[messages.length - 1]?.role === 'user' && (
-          <div className="typing">
-            <span /><span /><span />
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Attached files preview */}
-      {attachedFiles.length > 0 && (
-        <div className="attached-files">
-          {attachedFiles.map((file, i) => (
-            <div key={i} className="attached-file">
-              <span className="file-icon">{file.type === 'image' ? '🖼️' : '📄'}</span>
-              <span className="file-name">{file.fileName}</span>
-              <button className="file-remove" onClick={() => removeFile(i)}>✕</button>
-            </div>
+          )}
+          {sortedChats.length > 0 && <div className="chat-list-label">שיחות אחרונות</div>}
+          {sortedChats.map(chat => (
+            <button
+              key={chat.id}
+              className={`chat-item ${activeChatId === chat.id ? 'active' : ''}`}
+              onClick={() => switchChat(chat.id)}
+            >
+              <span className="chat-item-icon">💬</span>
+              <span className="chat-item-text">{chat.title}</span>
+              <span
+                className="chat-item-delete"
+                onClick={e => { e.stopPropagation(); deleteChat(chat.id); }}
+                title="מחק"
+              >✕</span>
+            </button>
           ))}
         </div>
-      )}
 
-      <div className="input-area">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="*/*"
-          multiple
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-        />
-        <div className="input-row">
-          <button
-            className="upload-btn"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={loading || uploading}
-            title="העלה קובץ"
-          >
-            {uploading ? <div className="spinner small" /> : '📎'}
-          </button>
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="שאל אותי על השקעות, פנסיה, ביטוח, משכנתא..."
-            rows={1}
-            disabled={loading}
-          />
-          <button
-            className="send-btn"
-            onClick={() => sendMessage()}
-            disabled={loading || (!input.trim() && !attachedFiles.length)}
-          >
-            ←
-          </button>
+        <div className="sidebar-user">
+          <div className="user-avatar">{userInitial}</div>
+          <div className="user-info">
+            <div className="user-name">{userName}</div>
+            <div className="user-label">חשבון אישי</div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main chat */}
+      <div className={`app ${dragging ? 'dragging' : ''}`}>
+        <header className="header">
+          <div className="header-icon">✦</div>
+          <div className="header-info">
+            <h1>נועם</h1>
+            <p>מתכנן פיננסי AI</p>
+          </div>
+        </header>
+
+        <div className="messages">
+          {messages.length === 0 && (
+            <div className="welcome">
+              <div className="welcome-icon">✦</div>
+              <h2>היי {userName}, מה נעשה היום?</h2>
+              <p>
+                אני נועם, המתכנן הפיננסי שלך. אפשר לשאול על השקעות, פנסיה, ביטוח, משכנתא, מיסים — או להעלות מסמכים לניתוח.
+              </p>
+              <div className="welcome-chips">
+                {WELCOME_CHIPS.map(chip => (
+                  <button key={chip} className="chip" onClick={() => sendMessage(chip)}>{chip}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.map((msg, i) => (
+            <div key={i} className={`message ${msg.role}`}>
+              <div className="message-avatar">
+                {msg.role === 'user' ? userInitial : '✦'}
+              </div>
+              {renderMessageContent({ ...msg, content: msg._display || msg.content })}
+            </div>
+          ))}
+
+          {toolStatus && (
+            <div className="tool-indicator">
+              <div className="spinner" />
+              {toolStatus}...
+            </div>
+          )}
+
+          {loading && !toolStatus && messages[messages.length - 1]?.role === 'user' && (
+            <div className="typing"><span /><span /><span /></div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {attachedFiles.length > 0 && (
+          <div className="attached-files">
+            {attachedFiles.map((file, i) => (
+              <div key={i} className="attached-file">
+                <span className="file-icon">{file.type === 'image' ? '🖼️' : '📄'}</span>
+                <span className="file-name">{file.fileName}</span>
+                <button className="file-remove" onClick={() => removeFile(i)}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="input-area">
+          <input ref={fileInputRef} type="file" accept="*/*" multiple onChange={handleFileSelect} style={{ display: 'none' }} />
+          <div className="input-row">
+            <button className="upload-btn" onClick={() => fileInputRef.current?.click()} disabled={loading || uploading} title="העלה קובץ">
+              {uploading ? <div className="spinner small" /> : '📎'}
+            </button>
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="שאל אותי על השקעות, פנסיה, ביטוח, משכנתא..."
+              rows={1}
+              disabled={loading}
+            />
+            <button className="send-btn" onClick={() => sendMessage()} disabled={loading || (!input.trim() && !attachedFiles.length)}>
+              ←
+            </button>
+          </div>
         </div>
       </div>
     </div>
