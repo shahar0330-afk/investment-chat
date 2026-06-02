@@ -316,17 +316,17 @@ export default function ChatPage() {
       )}
 
       <header className="header">
-        <div className="header-icon">💼</div>
+        <div className="header-icon">✦</div>
         <div className="header-info">
-          <h1>נועם — מתכנן פיננסי AI</h1>
-          <p>השקעות • פנסיה • ביטוח • משכנתא • מיסים</p>
+          <h1>נועם</h1>
+          <p>מתכנן פיננסי AI</p>
         </div>
       </header>
 
       <div className="messages">
         {!hasMessages && (
           <div className="welcome">
-            <div className="welcome-icon">💼</div>
+            <div className="welcome-icon">✦</div>
             <h2>בוא נסדר לך את הפיננסים</h2>
             <p>
               אני נועם, המתכנן הפיננסי שלך. אכיר אותך, אבין את המצב המלא,
@@ -352,7 +352,7 @@ export default function ChatPage() {
         {messages.map((msg, i) => (
           <div key={i} className={`message ${msg.role}`}>
             <div className="message-avatar">
-              {msg.role === 'user' ? '👤' : '💼'}
+              {msg.role === 'user' ? '👤' : '✦'}
             </div>
             {renderMessageContent({ ...msg, content: msg._display || msg.content })}
           </div>
@@ -410,7 +410,7 @@ export default function ChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="ספר לי על המצב הפיננסי שלך, או העלה קובץ לניתוח..."
+            placeholder="שאל אותי על השקעות, פנסיה, ביטוח, משכנתא..."
             rows={1}
             disabled={loading}
           />
