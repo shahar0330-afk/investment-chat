@@ -92,7 +92,8 @@ function saveToStorage(key, value) {
 // ─── Component ───
 
 export default function ChatPage() {
-  const [userName, setUserName] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const [userName, setUserName] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [chats, setChats] = useState({});
   const [activeChatId, setActiveChatId] = useState(null);
@@ -111,9 +112,10 @@ export default function ChatPage() {
 
   // Load user and chats from localStorage
   useEffect(() => {
-    setUserName(loadFromStorage('noam_user_name', null));
+    setUserName(loadFromStorage('noam_user_name', ''));
     setChats(loadFromStorage('noam_chats', {}));
     setActiveChatId(loadFromStorage('noam_active_chat', null));
+    setLoaded(true);
   }, []);
 
   // Save chats
@@ -319,7 +321,7 @@ export default function ChatPage() {
   const userInitial = userName ? userName.charAt(0).toUpperCase() : '?';
 
   // ─── Name modal ───
-  if (userName === null) {
+  if (!loaded) {
     return null; // Loading from localStorage
   }
 
