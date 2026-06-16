@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>נועם - יועץ השקעות AI | מצגת משקיעים</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #1B4F72;
+    --primary-light: #2E86C1;
+    --primary-dark: #154360;
+    --accent: #0E8C5A;
+    --accent-light: #27AE60;
+    --gold: #D4AC0D;
+    --dark: #F7F9FC;
+    --dark-card: #FFFFFF;
+    --dark-border: #D5DCEA;
+    --text: #1A2332;
+    --text-muted: #5D6D7E;
+    --gradient-1: linear-gradient(135deg, #1B4F72, #2E86C1);
+    --gradient-2: linear-gradient(135deg, #0E8C5A, #27AE60);
+    --gradient-3: linear-gradient(135deg, #1B4F72, #0E8C5A);
+  }
+
+  html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: #F7F9FC;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 15% 8%, rgba(46,134,193,0.22), transparent),
+      radial-gradient(ellipse 60% 50% at 85% 92%, rgba(14,140,90,0.18), transparent),
+      radial-gradient(ellipse 50% 30% at 50% 50%, rgba(27,79,114,0.08), transparent);
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ─── Slide base ─── */
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px;
+    position: relative;
+    scroll-snap-align: start;
+    overflow: hidden;
+  }
+
+  .slide-inner {
+    max-width: 1200px;
+    width: 100%;
+    z-index: 2;
+    position: relative;
+  }
+
+  /* ─── Navigation ─── */
+  .nav-dots {
+    position: fixed;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 100;
+  }
+
+  .nav-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--dark-border);
+    border: 2px solid var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .nav-dot:hover, .nav-dot.active {
+    background: var(--primary);
+    border-color: var(--primary-light);
+    transform: scale(1.3);
+  }
+
+  /* ─── Background effects ─── */
+  .bg-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(150px);
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .bg-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* ─── Typography ─── */
+  .slide-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  h1 { font-size: clamp(40px, 6vw, 72px); font-weight: 900; line-height: 1.1; }
+  h2 { font-size: clamp(32px, 4vw, 52px); font-weight: 800; line-height: 1.2; }
+  h3 { font-size: clamp(20px, 2.5vw, 28px); font-weight: 700; line-height: 1.3; }
+
+  .gradient-text {
+    background: var(--gradient-3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: clamp(18px, 2vw, 24px);
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1.6;
+    max-width: 700px;
+  }
+
+  /* ─── Cards ─── */
+  .card {
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 20px;
+    padding: 32px;
+    transition: all 0.3s;
+    box-shadow: 0 2px 12px rgba(27,79,114,0.04);
+  }
+
+  .card:hover {
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 60px rgba(27,79,114,0.1);
+  }
+
+  .card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+
+  .card-icon.purple { background: rgba(27,79,114,0.1); }
+  .card-icon.teal { background: rgba(14,140,90,0.1); }
+  .card-icon.gold { background: rgba(212,172,13,0.1); }
+  .card-icon.green { background: rgba(39,174,96,0.1); }
+
+  /* ─── Grid layouts ─── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+  /* ─── Stats ─── */
+  .stat-number {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+
+  .stat-unit {
+    font-size: 0.5em;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+
+  /* ─── Specific slides ─── */
+
+  /* Slide 1: Hero */
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(27,79,114,0.06);
+    border: 1px solid rgba(27,79,114,0.2);
+    border-radius: 100px;
+    padding: 8px 20px;
+    font-size: 14px;
+    color: var(--primary);
+    margin-bottom: 32px;
+  }
+
+  .hero-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 16px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: 'Heebo', sans-serif;
+    transition: all 0.3s;
+  }
+
+  .btn-primary {
+    background: var(--gradient-1);
+    color: white;
+    box-shadow: 0 8px 30px rgba(27,79,114,0.25);
+  }
+
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(27,79,114,0.35); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--dark-border);
+  }
+
+  .btn-outline:hover { border-color: var(--primary); }
+
+  /* Slide: Problem */
+  .problem-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px;
+    background: rgba(192,57,43,0.04);
+    border: 1px solid rgba(192,57,43,0.12);
+    border-radius: 16px;
+  }
+
+  .problem-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+
+  .problem-text h4 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #C0392B;
+  }
+
+  .problem-text p {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* Slide: Solution mockup */
+  .mockup-container {
+    background: var(--dark-card);
+    border: 1px solid var(--dark-border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(27,79,114,0.12);
+  }
+
+  .mockup-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: rgba(27,79,114,0.02);
+    border-bottom: 1px solid var(--dark-border);
+  }
+
+  .mockup-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .mockup-chat {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 360px;
+  }
+
+  .chat-msg {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    animation: fadeUp 0.5s ease-out;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .chat-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .chat-avatar.ai { background: var(--gradient-1); }
+  .chat-avatar.user { background: #D5DCEA; color: var(--primary); }
+
+  .chat-bubble {
+    background: #F0F4F8;
+    border-radius: 16px;
+    padding: 14px 18px;
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 80%;
+  }
+
+  .chat-bubble.ai-bubble { border: 1px solid rgba(27,79,114,0.15); background: #EBF5FB; }
+
+  .chat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 24px 20px;
+  }
+
+  .chat-chip {
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    background: rgba(27,79,114,0.06);
+    border: 1px solid rgba(27,79,114,0.15);
+    color: var(--primary);
+  }
+
+  /* Features */
+  .feature-card h4 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .feature-card p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Market */
+  .market-bar {
+    height: 12px;
+    border-radius: 6px;
+    background: var(--dark-border);
+    margin-top: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .market-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: var(--gradient-3);
+    transition: width 1s ease-out;
+  }
+
+  /* Business model */
+  .tier-card {
+    text-align: center;
+    position: relative;
+  }
+
+  .tier-card.featured {
+    border-color: var(--primary);
+    background: linear-gradient(180deg, rgba(27,79,114,0.04), var(--dark-card));
+  }
+
+  .tier-badge {
+    position: absolute;
+    top: -12px;
+    right: 50%;
+    transform: translateX(50%);
+    background: var(--gradient-1);
+    color: white;
+    padding: 4px 16px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .tier-price {
+    font-size: 48px;
+    font-weight: 900;
+    margin: 16px 0;
+  }
+
+  .tier-price .currency { font-size: 24px; font-weight: 400; }
+  .tier-price .period { font-size: 16px; font-weight: 400; color: var(--text-muted); }
+
+  .tier-features {
+    list-style: none;
+    text-align: right;
+    margin-top: 20px;
+  }
+
+  .tier-features li {
+    padding: 8px 0;
+    font-size: 14px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--dark-border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tier-features li::before {
+    content: '✓';
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Roadmap */
+  .timeline {
+    position: relative;
+    padding-right: 40px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    right: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--dark-border);
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 40px;
+    padding-right: 40px;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    right: -33px;
+    top: 8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 3px solid var(--dark);
+  }
+
+  .timeline-dot.done { background: var(--accent); }
+  .timeline-dot.current { background: var(--gold); box-shadow: 0 0 20px rgba(212,172,13,0.35); }
+
+  .timeline-date {
+    font-size: 13px;
+    color: var(--primary-light);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .timeline-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .timeline-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* Team */
+  .team-card {
+    text-align: center;
+  }
+
+  .team-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+  }
+
+  .team-name {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .team-role {
+    font-size: 14px;
+    color: var(--primary-light);
+    margin-bottom: 12px;
+  }
+
+  .team-bio {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Tech stack */
+  .tech-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(27,79,114,0.02);
+    border-radius: 12px;
+    border: 1px solid var(--dark-border);
+  }
+
+  .tech-icon {
+    font-size: 24px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(27,79,114,0.08);
+  }
+
+  .tech-name { font-weight: 600; font-size: 15px; }
+  .tech-desc { font-size: 12px; color: var(--text-muted); }
+
+  /* CTA */
+  .cta-box {
+    text-align: center;
+    padding: 80px 40px;
+    background: linear-gradient(180deg, rgba(27,79,114,0.04), transparent);
+    border: 1px solid rgba(27,79,114,0.15);
+    border-radius: 32px;
+  }
+
+  .cta-box .stat-number { color: var(--accent); }
+
+  /* Competitive */
+  .compare-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 32px;
+  }
+
+  .compare-table th, .compare-table td {
+    padding: 16px 20px;
+    text-align: center;
+    border-bottom: 1px solid var(--dark-border);
+    font-size: 14px;
+  }
+
+  .compare-table th {
+    background: rgba(27,79,114,0.06);
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .compare-table th:first-child { text-align: right; border-radius: 12px 0 0 0; }
+  .compare-table th:last-child { border-radius: 0 12px 0 0; }
+
+  .compare-table td:first-child {
+    text-align: right;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .compare-table .highlight-col {
+    background: rgba(27,79,114,0.04);
+    border-left: 1px solid rgba(27,79,114,0.15);
+    border-right: 1px solid rgba(27,79,114,0.15);
+  }
+
+  .compare-table th.highlight-col {
+    background: var(--gradient-1);
+    color: white;
+  }
+
+  .check { color: var(--accent); font-size: 18px; }
+  .cross { color: #C0392B; font-size: 18px; }
+  .partial { color: var(--gold); font-size: 18px; }
+
+  /* Bidi isolation for English in RTL */
+  .en {
+    unicode-bidi: isolate;
+    direction: ltr;
+    display: inline-block;
+  }
+
+  /* Cash flow table */
+  .cf-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+
+  .cf-table th, .cf-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--dark-border);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .cf-table th {
+    background: rgba(27,79,114,0.06);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .cf-table th:first-child { text-align: right; border-radius: 12px 0 0 0; }
+  .cf-table th:last-child { border-radius: 0 12px 0 0; }
+
+  .cf-table td:first-child {
+    text-align: right;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .cf-table .row-total td {
+    border-top: 2px solid var(--dark-border);
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  .cf-table .positive { color: var(--accent); }
+  .cf-table .negative { color: #C0392B; }
+
+  .cf-year-header {
+    background: rgba(27,79,114,0.08) !important;
+    font-size: 14px !important;
+  }
+
+  /* Divider */
+  .divider {
+    width: 60px;
+    height: 4px;
+    background: var(--gradient-3);
+    border-radius: 2px;
+    margin: 24px 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .slide { padding: 40px 20px; }
+    .nav-dots { display: none; }
+    .compare-table { font-size: 12px; }
+    .compare-table th, .compare-table td { padding: 10px 8px; }
+    .cf-table { font-size: 11px; }
+    .cf-table th, .cf-table td { padding: 8px 4px; }
+  }
+
+  @media (max-width: 600px) {
+    .hero-cta { flex-direction: column; }
+    .btn { width: 100%; text-align: center; }
+  }
+
+  /* Animations */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* CTA button glow animation */
+  .btn-glow {
+    position: relative;
+    animation: btn-glow-pulse 2s ease-in-out infinite;
+    text-decoration: none;
+  }
+
+  .btn-outline {
+    text-decoration: none;
+  }
+
+  @keyframes btn-glow-pulse {
+    0%, 100% { box-shadow: 0 8px 30px rgba(27,79,114,0.25); }
+    50% { box-shadow: 0 8px 40px rgba(27,79,114,0.45), 0 0 60px rgba(14,140,90,0.2); }
+  }
+
+  .btn-huge {
+    font-size: 22px;
+    padding: 22px 56px;
+    border-radius: 16px;
+    animation: btn-glow-pulse 2s ease-in-out infinite, btn-nudge 3s ease-in-out infinite;
+  }
+
+  @keyframes btn-nudge {
+    0%, 100% { transform: scale(1); }
+    10% { transform: scale(1.04); }
+    20% { transform: scale(1); }
+    30% { transform: scale(1.03); }
+    40% { transform: scale(1); }
+  }
+
+  .bounce-icon {
+    animation: bounce-float 3s ease-in-out infinite;
+  }
+
+  @keyframes bounce-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  .cta-arrow {
+    margin-top: 16px;
+    animation: arrow-bounce 1.5s ease-in-out infinite;
+    opacity: 0.5;
+  }
+
+  @keyframes arrow-bounce {
+    0%, 100% { transform: translateY(0); opacity: 0.5; }
+    50% { transform: translateY(-8px); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation dots -->
+<nav class="nav-dots" id="navDots"></nav>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 1: HERO -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-0">
+  <div class="bg-glow" style="width:700px;height:700px;background:#5DADE2;top:-250px;right:-150px;"></div>
+  <div class="bg-glow" style="width:500px;height:500px;background:#52BE80;bottom:-150px;left:-150px;"></div>
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      מגייסים סבב <span class="en">Pre-Seed</span>
+    </div>
+    <h1>
+      <span class="gradient-text">נועם</span><br>
+      יועץ ההשקעות<br>האישי שלך
+    </h1>
+    <p class="subtitle" style="margin-top:24px;">
+      מתכנן פיננסי מוסמך (<span class="en">CFP</span>) מבוסס <span class="en">AI</span> שמבין השקעות, פנסיה, ביטוח, משכנתא, מיסוי ותכנון פרישה — הכל בעברית, בשיחה טבעית אחת.
+    </p>
+    <div class="hero-cta">
+      <a href="https://investment-chat-psi.vercel.app/" target="_blank" class="btn btn-primary btn-glow">נסה את נועם בחינם &larr;</a>
+      <a href="https://investment-chat-psi.vercel.app/" target="_blank" class="btn btn-outline">צפה בדמו חי</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 2: THE PROBLEM -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-1">
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="slide-label">הבעיה</div>
+    <h2>הישראלים מפסידים כסף<br>כי אין להם <span class="gradient-text">יועץ נגיש</span></h2>
+    <div class="divider"></div>
+
+    <div class="grid-2" style="margin-top:40px;">
+      <div class="problem-item">
+        <div class="problem-icon">💸</div>
+        <div class="problem-text">
+          <h4>דמי ניהול מופקעים</h4>
+          <p>ישראלים מפסידים בממוצע ₪400,000+ לאורך חיי העבודה על דמי ניהול גבוהים בפנסיה — בלי לדעת</p>
+        </div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-icon">🔒</div>
+        <div class="problem-text">
+          <h4>ייעוץ פיננסי = יקר</h4>
+          <p>פגישה עם יועץ <span class="en">CFP</span> עולה <span class="en">₪2,000-500+</span>. רוב הציבור לא ניגש ליועץ מקצועי אף פעם</p>
+        </div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-icon">🤯</div>
+        <div class="problem-text">
+          <h4>מורכבות מדהימה</h4>
+          <p>מדרגות מס, קרנות פנסיה, ביטוחים, משכנתא — אנשים לא יודעים מאיפה להתחיל</p>
+        </div>
+      </div>
+      <div class="problem-item">
+        <div class="problem-icon">⏰</div>
+        <div class="problem-text">
+          <h4>ניגודי עניינים</h4>
+          <p>סוכני ביטוח ובנקאים מקבלים עמלות — הם לא תמיד ממליצים על מה שהכי טוב ללקוח</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 3: MARKET OPPORTUNITY -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-2">
+  <div class="bg-glow" style="width:600px;height:600px;background:#45B39D;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="slide-label">הזדמנות שוק</div>
+    <h2>שוק ענק שמחכה ל<span class="gradient-text">דיסרפציה</span></h2>
+    <div class="divider"></div>
+
+    <div class="grid-4" style="margin-top:48px;">
+      <div class="card" style="text-align:center;">
+        <div class="stat-number gradient-text">3.8M</div>
+        <div class="stat-label">משקי בית בישראל<br>ללא יועץ פיננסי</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="stat-number" style="color:var(--accent);"><span class="en">$2.1T</span></div>
+        <div class="stat-label">נכסים פנסיוניים<br>מנוהלים בישראל</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="stat-number" style="color:var(--gold);"><span class="en">$27B</span></div>
+        <div class="stat-label">שוק ה-<span class="en">WealthTech</span><br>העולמי (2025)</div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="stat-number" style="color:var(--accent-light);"><span class="en">34%</span></div>
+        <div class="stat-label">צמיחה שנתית<br><span class="en">CAGR</span> של <span class="en">AI</span> בפינטק</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:32px;">
+      <div class="grid-2">
+        <div>
+          <h4 style="margin-bottom:12px;"><span class="en">TAM</span> — שוק כולל</h4>
+          <div class="market-bar"><div class="market-bar-fill" style="width:100%;"></div></div>
+          <p style="margin-top:8px;font-size:14px;color:var(--text-muted);"><span class="en">₪4.5B</span> — כל שירותי הייעוץ הפיננסי בישראל</p>
+        </div>
+        <div>
+          <h4 style="margin-bottom:12px;"><span class="en">SAM</span> — שוק בר-השגה</h4>
+          <div class="market-bar"><div class="market-bar-fill" style="width:35%;"></div></div>
+          <p style="margin-top:8px;font-size:14px;color:var(--text-muted);"><span class="en">₪1.5B</span> — <span class="en">Digital-first</span>, גילאי 25-55</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 4: THE SOLUTION (MOCKUP) -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-3">
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="grid-2" style="align-items:center;">
+      <div>
+        <div class="slide-label">הפתרון</div>
+        <h2>שיחה אחת.<br><span class="gradient-text">תכנית פיננסית</span><br>מלאה.</h2>
+        <div class="divider"></div>
+        <p class="subtitle" style="font-size:17px;">
+          נועם מנהל שיחה טבעית בעברית, מבין את המצב הפיננסי שלך, שולף נתוני שוק בזמן אמת, ובונה תכנית מותאמת אישית — בדיוק כמו יועץ <span class="en">CFP</span>, אבל זמין 24/7 בחינם.
+        </p>
+      </div>
+      <div class="mockup-container">
+        <div class="mockup-topbar">
+          <div class="mockup-dot" style="background:#FF5F57;"></div>
+          <div class="mockup-dot" style="background:#FFBD2E;"></div>
+          <div class="mockup-dot" style="background:#28CA42;"></div>
+          <span style="margin-right:12px;font-size:13px;color:var(--text-muted);">נועם — מתכנן פיננסי <span class="en">AI</span></span>
+        </div>
+        <div class="mockup-chat">
+          <div class="chat-msg">
+            <div class="chat-avatar ai">✦</div>
+            <div class="chat-bubble ai-bubble">היי יוסי! מה נעשה היום? 😊</div>
+          </div>
+          <div class="chat-msg" style="flex-direction:row-reverse;">
+            <div class="chat-avatar user">י</div>
+            <div class="chat-bubble">אני בן 32, מרוויח 18K נטו. רוצה לדעת אם הפנסיה שלי בסדר</div>
+          </div>
+          <div class="chat-msg">
+            <div class="chat-avatar ai">✦</div>
+            <div class="chat-bubble ai-bubble">
+              בדקתי — דמי הניהול שלך <strong>0.52%</strong> מצבירה. זה גבוה!<br><br>
+              מעבר ל-<strong>0.15%</strong> יחסוך לך <strong style="color:var(--accent);">₪347,000</strong> עד הפרישה 🤯<br><br>
+              רוצה שאבנה לך תכנית מלאה?
+            </div>
+          </div>
+        </div>
+        <div class="chat-chips">
+          <span class="chat-chip">בדוק את הביטוחים שלי</span>
+          <span class="chat-chip">בנה לי תיק השקעות</span>
+          <span class="chat-chip">📎 העלה דוח פנסיה</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 5: KEY FEATURES -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-4">
+  <div class="bg-glow" style="width:600px;height:600px;background:#5DADE2;bottom:-200px;right:-150px;"></div>
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="slide-label">יכולות</div>
+    <h2>הכל במקום אחד.<br><span class="gradient-text">7 תחומים. <span class="en">AI</span> אחד.</span></h2>
+    <div class="divider"></div>
+
+    <div class="grid-3" style="margin-top:40px;">
+      <div class="card feature-card">
+        <div class="card-icon purple">📊</div>
+        <h4>השקעות בזמן אמת</h4>
+        <p>נתוני שוק חיים, ניתוח פונדמנטלי, סריקת סקטורים, <span class="en">ETFs</span> ומדדים — ישירות מ-<span class="en">Yahoo Finance</span></p>
+      </div>
+      <div class="card feature-card">
+        <div class="card-icon teal">🏦</div>
+        <h4>פנסיה וחיסכון</h4>
+        <p>ניתוח דמי ניהול, השוואת קרנות, קופות גמל, קרן השתלמות, ביטוח מנהלים</p>
+      </div>
+      <div class="card feature-card">
+        <div class="card-icon gold">🛡️</div>
+        <h4>ביטוחים</h4>
+        <p>ביטוח חיים, אובדן כושר עבודה, בריאות, רכב, דירה — ניתוח פערים והמלצות</p>
+      </div>
+      <div class="card feature-card">
+        <div class="card-icon green">🏠</div>
+        <h4>משכנתא</h4>
+        <p>חישוב החזרים, השוואת מסלולים (פריים/קל"צ/צמוד), מיחזור, מס רכישה</p>
+      </div>
+      <div class="card feature-card">
+        <div class="card-icon purple">💰</div>
+        <h4>מיסוי</h4>
+        <p>מדרגות מס, הטבות לא מנוצלות, ניכויים, זיכויים, מס שבח, תכנון מס לעצמאים</p>
+      </div>
+      <div class="card feature-card">
+        <div class="card-icon teal">📄</div>
+        <h4>ניתוח מסמכים</h4>
+        <p>העלאת <span class="en">PDF</span>, <span class="en">Word</span>, <span class="en">Excel</span>, תמונות — נועם קורא, מנתח ונותן תובנות על כל מסמך פיננסי</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 6: COMPETITIVE ADVANTAGE -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-5">
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="slide-label">יתרון תחרותי</div>
+    <h2>למה <span class="gradient-text">נועם</span> מנצח?</h2>
+    <div class="divider"></div>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>תכונה</th>
+          <th class="highlight-col">✦ נועם</th>
+          <th>יועץ <span class="en">CFP</span></th>
+          <th>בנק / סוכן</th>
+          <th>אפליקציות קיימות</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>תכנית פיננסית מקיפה</td>
+          <td class="highlight-col"><span class="check">&#10004;</span></td>
+          <td><span class="check">&#10004;</span></td>
+          <td><span class="cross">&#10008;</span></td>
+          <td><span class="partial">~</span></td>
+        </tr>
+        <tr>
+          <td>זמין 24/7</td>
+          <td class="highlight-col"><span class="check">&#10004;</span></td>
+          <td><span class="cross">&#10008;</span></td>
+          <td><span class="cross">&#10008;</span></td>
+          <td><span class="check">&#10004;</span></td>
+        </tr>
+        <tr>
+          <td>עברית טבעית</td>
+          <td class="highlight-col"><span class="check">&#10004;</span></td>
+          <td><span class="check">&#10004;</span></td>
+          <td><span class="check">&#10004;</span></td>
+          <td><span class="cross">&#10008;</span></td>
+        </tr>
+        <tr>
+          <td>ללא ניגוד עניינים</td>
+          <td class="highlight-col"><span class="check">&#10004;</span></td>
+          <td><span class="partial">~</span></td>
+          <td><span class="cross">&#10008;</span></td>
+          <td><span class="check">&#10004;</span></td>
+        </tr>
+        <tr>
+          <td>נתוני שוק בזמן אמת</td>
+          <td class="highlight-col"><span class="check">&#10004;</span></td>
+          <td><span class="cross">&#10008;</span></td>
+          <td><span class="partial">~</span></td>
+          <td><span class="partial">~</span></td>
+        </tr>
+        <tr>
+          <td>ניתוח מסמכים</td>
+          <td class="highlight-col"><span class="check">&#10004;</span></td>
+          <td><span class="check">&#10004;</span></td>
+          <td><span class="cross">&#10008;</span></td>
+          <td><span class="cross">&#10008;</span></td>
+        </tr>
+        <tr>
+          <td>עלות ללקוח</td>
+          <td class="highlight-col"><strong style="color:var(--accent);">חינם / ₪49</strong></td>
+          <td>₪500-2,000</td>
+          <td>"חינם" (עמלות)</td>
+          <td>₪30-100</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 7: TECHNOLOGY -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-6">
+  <div class="bg-glow" style="width:500px;height:500px;background:#48C9B0;top:-120px;left:30%;"></div>
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="slide-label">טכנולוגיה</div>
+    <h2>בנוי על <span class="gradient-text"><span class="en">AI</span> מהשורה הראשונה</span></h2>
+    <div class="divider"></div>
+
+    <div class="grid-2" style="margin-top:40px;">
+      <div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="tech-item">
+            <div class="tech-icon">🧠</div>
+            <div>
+              <div class="tech-name"><span class="en">Claude AI (Anthropic)</span></div>
+              <div class="tech-desc">מודל שפה מתקדם עם יכולת הבנה פיננסית עמוקה</div>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">⚡</div>
+            <div>
+              <div class="tech-name"><span class="en">Next.js + Streaming</span></div>
+              <div class="tech-desc">תשובות בזמן אמת עם <span class="en">Server-Sent Events</span></div>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">📈</div>
+            <div>
+              <div class="tech-name"><span class="en">Yahoo Finance API</span></div>
+              <div class="tech-desc">נתוני שוק חיים — מניות, מדדים, <span class="en">ETFs</span>, אנליסטים</div>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">🔧</div>
+            <div>
+              <div class="tech-name">5 כלי <span class="en">AI</span> מותאמים</div>
+              <div class="tech-desc">ניתוח פונדמנטלי, סריקת שוק, מחשבון פיננסי, ועוד</div>
+            </div>
+          </div>
+          <div class="tech-item">
+            <div class="tech-icon">📎</div>
+            <div>
+              <div class="tech-name">ניתוח מסמכים חכם</div>
+              <div class="tech-desc"><span class="en">PDF</span>, <span class="en">Word</span>, <span class="en">Excel</span>, תמונות — 15+ פורמטים נתמכים</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="background:linear-gradient(180deg, rgba(27,79,114,0.03), rgba(14,140,90,0.03));">
+        <h3 style="margin-bottom:24px;">ארכיטקטורה</h3>
+        <div style="font-family:monospace;font-size:13px;line-height:2;color:var(--text-muted);direction:ltr;text-align:left;">
+          <div style="color:var(--primary-light);">┌─────────────────┐</div>
+          <div style="color:var(--primary-light);">│   <span style="color:var(--text);">User Chat UI</span>    │</div>
+          <div style="color:var(--primary-light);">│  <span style="color:var(--text-muted);">Next.js + React</span>  │</div>
+          <div style="color:var(--primary-light);">└────────┬────────┘</div>
+          <div style="color:var(--text-muted);">         │ SSE Stream</div>
+          <div style="color:var(--accent);">┌────────▼────────┐</div>
+          <div style="color:var(--accent);">│  <span style="color:var(--text);">API Routes</span>      │</div>
+          <div style="color:var(--accent);">│  <span style="color:var(--text-muted);">/chat /upload</span>   │</div>
+          <div style="color:var(--accent);">└──┬─────────┬──┘</div>
+          <div style="color:var(--text-muted);">   │         │</div>
+          <div style="display:flex;gap:20px;">
+            <div>
+              <div style="color:var(--gold);">┌──▼──────┐</div>
+              <div style="color:var(--gold);">│ <span style="color:var(--text);">Claude</span>  │</div>
+              <div style="color:var(--gold);">│ <span style="color:var(--text-muted);">Sonnet</span>  │</div>
+              <div style="color:var(--gold);">└─────────┘</div>
+            </div>
+            <div>
+              <div style="color:var(--accent-light);">┌──▼──────┐</div>
+              <div style="color:var(--accent-light);">│ <span style="color:var(--text);">Yahoo</span>   │</div>
+              <div style="color:var(--accent-light);">│ <span style="color:var(--text-muted);">Finance</span> │</div>
+              <div style="color:var(--accent-light);">└─────────┘</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 8: BUSINESS MODEL -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-7">
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="slide-label">מודל עסקי</div>
+    <h2>פרימיום + <span class="gradient-text"><span class="en">B2B</span></span></h2>
+    <div class="divider"></div>
+
+    <div class="grid-3" style="margin-top:48px;">
+      <div class="card tier-card">
+        <h3>חינם</h3>
+        <div class="tier-price"><span class="currency">₪</span>0<span class="period">/חודש</span></div>
+        <p style="color:var(--text-muted);font-size:14px;">להתחיל להכיר</p>
+        <ul class="tier-features">
+          <li>5 שיחות בחודש</li>
+          <li>ייעוץ בסיסי</li>
+          <li>נתוני שוק</li>
+          <li>מחשבון פיננסי</li>
+        </ul>
+      </div>
+
+      <div class="card tier-card featured">
+        <div class="tier-badge">הכי פופולרי</div>
+        <h3 style="color:var(--primary-light);">פרימיום</h3>
+        <div class="tier-price gradient-text"><span class="currency">₪</span>49<span class="period">/חודש</span></div>
+        <p style="color:var(--text-muted);font-size:14px;">תכנון פיננסי מלא</p>
+        <ul class="tier-features">
+          <li>שיחות ללא הגבלה</li>
+          <li>ניתוח מסמכים</li>
+          <li>תכנית פיננסית מלאה</li>
+          <li>התראות שוק</li>
+          <li>היסטוריית שיחות</li>
+        </ul>
+      </div>
+
+      <div class="card tier-card">
+        <h3><span class="en">B2B / White Label</span></h3>
+        <div class="tier-price" style="color:var(--accent);font-size:36px;"><span class="en">Custom</span></div>
+        <p style="color:var(--text-muted);font-size:14px;">לחברות פיננסיות</p>
+        <ul class="tier-features">
+          <li>מיתוג מותאם</li>
+          <li>אינטגרציה למערכות</li>
+          <li>גישת <span class="en">API</span></li>
+          <li><span class="en">SLA</span> ותמיכה</li>
+          <li>דאטה ואנליטיקס</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:32px;text-align:center;">
+      <div class="grid-3">
+        <div>
+          <div class="stat-number gradient-text">₪49</div>
+          <div class="stat-label"><span class="en">ARPU</span> חודשי (פרימיום)</div>
+        </div>
+        <div>
+          <div class="stat-number" style="color:var(--accent);">85%</div>
+          <div class="stat-label"><span class="en">Gross Margin</span> צפוי</div>
+        </div>
+        <div>
+          <div class="stat-number" style="color:var(--gold);">₪2.5</div>
+          <div class="stat-label">עלות שיחה ממוצעת (<span class="en">API</span>)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 9: ROADMAP -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-8">
+  <div class="bg-glow" style="width:500px;height:500px;background:#5DADE2;top:20%;right:-120px;"></div>
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="slide-label">תכנית עבודה</div>
+    <h2>מ-<span class="en">MVP</span> ל<span class="gradient-text">מוצר מלא</span></h2>
+    <div class="divider"></div>
+
+    <div class="grid-2" style="margin-top:40px;">
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot done"></div>
+          <div class="timeline-date">Q2 2025 — הושלם ✓</div>
+          <div class="timeline-title"><span class="en">MVP</span> — צ׳אט <span class="en">AI</span> פיננסי</div>
+          <div class="timeline-desc">שיחה בעברית, 5 כלי <span class="en">AI</span>, נתוני שוק חיים, העלאת מסמכים, היסטוריית שיחות</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot current"></div>
+          <div class="timeline-date">Q3 2025 — עכשיו</div>
+          <div class="timeline-title">הרחבה ו-<span class="en">Beta</span></div>
+          <div class="timeline-desc">חיבור לנתוני פנסיה אמיתיים, התראות חכמות, אפליקציית מובייל, 500 משתמשי <span class="en">Beta</span></div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">Q4 2025</div>
+          <div class="timeline-title">השקה + <span class="en">B2B</span></div>
+          <div class="timeline-desc">השקה מסחרית, מודל פרימיום, שיתופי פעולה עם גופים פיננסיים, <span class="en">White Label</span></div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-date">2026</div>
+          <div class="timeline-title"><span class="en">Scale</span> + רגולציה</div>
+          <div class="timeline-desc">רישיון יועץ רובו, אינטגרציה עם בנקים, הרחבה לשווקים נוספים</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div class="card">
+          <h4 style="color:var(--accent);margin-bottom:12px;">🎯 יעדים לשנה הראשונה</h4>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:12px;">
+            <li style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--dark-border);">
+              <span>משתמשים רשומים</span>
+              <strong style="color:var(--accent);">10,000</strong>
+            </li>
+            <li style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--dark-border);">
+              <span>משתמשים משלמים</span>
+              <strong style="color:var(--accent);">1,500</strong>
+            </li>
+            <li style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--dark-border);">
+              <span><span class="en">MRR</span></span>
+              <strong style="color:var(--accent);"><span class="en">₪73K</span></strong>
+            </li>
+            <li style="display:flex;justify-content:space-between;">
+              <span>שותפויות <span class="en">B2B</span></span>
+              <strong style="color:var(--accent);">3-5</strong>
+            </li>
+          </ul>
+        </div>
+        <div class="card" style="background:linear-gradient(135deg, rgba(212,172,13,0.06), rgba(27,79,114,0.06));">
+          <h4 style="color:var(--gold);margin-bottom:8px;">💡 <span class="en">Moat</span> — חפיר תחרותי</h4>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--text-muted);">
+            <li>• <strong style="color:var(--text);">עברית ראשונה</strong> — מותאם לרגולציה הישראלית</li>
+            <li>• <strong style="color:var(--text);">ידע <span class="en">CFP</span> מקצועי</strong> — מדרגות מס, פנסיה, ביטוח לאומי</li>
+            <li>• <strong style="color:var(--text);">נתוני שוק חיים</strong> — לא רק צ'אט, גם כלים</li>
+            <li>• <strong style="color:var(--text);">ניתוח מסמכים</strong> — מבין דוחות פנסיה ומשכנתא</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 10: CASH FLOW PROJECTION -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-9">
+  <div class="bg-glow" style="width:600px;height:600px;background:#52BE80;bottom:-150px;left:-120px;"></div>
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in">
+    <div class="slide-label">תזרים מזומנים</div>
+    <h2>תחזית <span class="gradient-text">3 שנים</span></h2>
+    <div class="divider"></div>
+
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="cf-year-header" colspan="4">שנה 1 (2026)</th>
+          <th class="cf-year-header" colspan="4">שנה 2 (2027)</th>
+          <th class="cf-year-header" colspan="4">שנה 3 (2028)</th>
+        </tr>
+        <tr>
+          <th style="min-width:140px;"></th>
+          <th><span class="en">Q1</span></th>
+          <th><span class="en">Q2</span></th>
+          <th><span class="en">Q3</span></th>
+          <th><span class="en">Q4</span></th>
+          <th><span class="en">Q1</span></th>
+          <th><span class="en">Q2</span></th>
+          <th><span class="en">Q3</span></th>
+          <th><span class="en">Q4</span></th>
+          <th><span class="en">Q1</span></th>
+          <th><span class="en">Q2</span></th>
+          <th><span class="en">Q3</span></th>
+          <th><span class="en">Q4</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>👥 משתמשים (מצטבר)</td>
+          <td><span class="en">500</span></td>
+          <td><span class="en">2K</span></td>
+          <td><span class="en">5K</span></td>
+          <td><span class="en">10K</span></td>
+          <td><span class="en">18K</span></td>
+          <td><span class="en">30K</span></td>
+          <td><span class="en">50K</span></td>
+          <td><span class="en">75K</span></td>
+          <td><span class="en">100K</span></td>
+          <td><span class="en">140K</span></td>
+          <td><span class="en">185K</span></td>
+          <td><span class="en">250K</span></td>
+        </tr>
+        <tr>
+          <td>💳 משלמים</td>
+          <td><span class="en">20</span></td>
+          <td><span class="en">150</span></td>
+          <td><span class="en">600</span></td>
+          <td><span class="en">1.5K</span></td>
+          <td><span class="en">2.5K</span></td>
+          <td><span class="en">4.5K</span></td>
+          <td><span class="en">7K</span></td>
+          <td><span class="en">10K</span></td>
+          <td><span class="en">14K</span></td>
+          <td><span class="en">19K</span></td>
+          <td><span class="en">25K</span></td>
+          <td><span class="en">32K</span></td>
+        </tr>
+        <tr style="background:rgba(27,79,114,0.03);">
+          <td>📈 הכנסות (<span class="en">₪K</span>)</td>
+          <td class="positive"><span class="en">3</span></td>
+          <td class="positive"><span class="en">22</span></td>
+          <td class="positive"><span class="en">88</span></td>
+          <td class="positive"><span class="en">220</span></td>
+          <td class="positive"><span class="en">415</span></td>
+          <td class="positive"><span class="en">660</span></td>
+          <td class="positive"><span class="en">980</span></td>
+          <td class="positive"><span class="en">1,420</span></td>
+          <td class="positive"><span class="en">1,850</span></td>
+          <td class="positive"><span class="en">2,470</span></td>
+          <td class="positive"><span class="en">3,180</span></td>
+          <td class="positive"><span class="en">4,100</span></td>
+        </tr>
+        <tr>
+          <td>👨‍💻 פיתוח (<span class="en">₪K</span>)</td>
+          <td class="negative"><span class="en">-120</span></td>
+          <td class="negative"><span class="en">-120</span></td>
+          <td class="negative"><span class="en">-150</span></td>
+          <td class="negative"><span class="en">-150</span></td>
+          <td class="negative"><span class="en">-200</span></td>
+          <td class="negative"><span class="en">-200</span></td>
+          <td class="negative"><span class="en">-250</span></td>
+          <td class="negative"><span class="en">-250</span></td>
+          <td class="negative"><span class="en">-300</span></td>
+          <td class="negative"><span class="en">-300</span></td>
+          <td class="negative"><span class="en">-350</span></td>
+          <td class="negative"><span class="en">-350</span></td>
+        </tr>
+        <tr>
+          <td>📢 שיווק (<span class="en">₪K</span>)</td>
+          <td class="negative"><span class="en">-30</span></td>
+          <td class="negative"><span class="en">-60</span></td>
+          <td class="negative"><span class="en">-100</span></td>
+          <td class="negative"><span class="en">-120</span></td>
+          <td class="negative"><span class="en">-150</span></td>
+          <td class="negative"><span class="en">-200</span></td>
+          <td class="negative"><span class="en">-250</span></td>
+          <td class="negative"><span class="en">-300</span></td>
+          <td class="negative"><span class="en">-350</span></td>
+          <td class="negative"><span class="en">-400</span></td>
+          <td class="negative"><span class="en">-450</span></td>
+          <td class="negative"><span class="en">-500</span></td>
+        </tr>
+        <tr>
+          <td>🖥️ תשתיות + <span class="en">AI</span> (<span class="en">₪K</span>)</td>
+          <td class="negative"><span class="en">-15</span></td>
+          <td class="negative"><span class="en">-25</span></td>
+          <td class="negative"><span class="en">-45</span></td>
+          <td class="negative"><span class="en">-70</span></td>
+          <td class="negative"><span class="en">-90</span></td>
+          <td class="negative"><span class="en">-120</span></td>
+          <td class="negative"><span class="en">-160</span></td>
+          <td class="negative"><span class="en">-200</span></td>
+          <td class="negative"><span class="en">-230</span></td>
+          <td class="negative"><span class="en">-280</span></td>
+          <td class="negative"><span class="en">-340</span></td>
+          <td class="negative"><span class="en">-400</span></td>
+        </tr>
+        <tr>
+          <td>⚖️ תפעול כללי (<span class="en">₪K</span>)</td>
+          <td class="negative"><span class="en">-25</span></td>
+          <td class="negative"><span class="en">-25</span></td>
+          <td class="negative"><span class="en">-30</span></td>
+          <td class="negative"><span class="en">-30</span></td>
+          <td class="negative"><span class="en">-40</span></td>
+          <td class="negative"><span class="en">-40</span></td>
+          <td class="negative"><span class="en">-50</span></td>
+          <td class="negative"><span class="en">-50</span></td>
+          <td class="negative"><span class="en">-60</span></td>
+          <td class="negative"><span class="en">-60</span></td>
+          <td class="negative"><span class="en">-70</span></td>
+          <td class="negative"><span class="en">-70</span></td>
+        </tr>
+        <tr class="row-total" style="background:rgba(27,79,114,0.04);">
+          <td>💰 תזרים נקי (<span class="en">₪K</span>)</td>
+          <td class="negative"><span class="en">-187</span></td>
+          <td class="negative"><span class="en">-208</span></td>
+          <td class="negative"><span class="en">-237</span></td>
+          <td class="negative"><span class="en">-150</span></td>
+          <td class="negative"><span class="en">-65</span></td>
+          <td class="positive"><span class="en">+100</span></td>
+          <td class="positive"><span class="en">+270</span></td>
+          <td class="positive"><span class="en">+620</span></td>
+          <td class="positive"><span class="en">+910</span></td>
+          <td class="positive"><span class="en">+1,430</span></td>
+          <td class="positive"><span class="en">+1,970</span></td>
+          <td class="positive"><span class="en">+2,780</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="grid-3" style="margin-top:32px;">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">סה״כ שנה 1</div>
+        <div class="stat-number negative" style="font-size:32px;"><span class="en">-₪782K</span></div>
+        <div style="font-size:12px;color:#C0392B;margin-top:4px;">שלב צמיחה והשקעה</div>
+      </div>
+      <div class="card" style="text-align:center;border-color:var(--accent);">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">סה״כ שנה 2</div>
+        <div class="stat-number positive" style="font-size:32px;"><span class="en">+₪925K</span></div>
+        <div style="font-size:12px;color:var(--accent);margin-top:4px;">🎯 נקודת איזון ב-<span class="en">Q2</span></div>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">סה״כ שנה 3</div>
+        <div class="stat-number positive" style="font-size:32px;"><span class="en">+₪7.1M</span></div>
+        <div style="font-size:12px;color:var(--accent-light);margin-top:4px;">רווחיות מלאה + הרחבה</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px;background:linear-gradient(135deg, rgba(14,140,90,0.04), rgba(27,79,114,0.04));">
+      <div class="grid-2" style="gap:48px;">
+        <div>
+          <h4 style="margin-bottom:12px;">📊 הנחות מפתח</h4>
+          <ul style="list-style:none;font-size:14px;color:var(--text-muted);display:flex;flex-direction:column;gap:6px;">
+            <li>• שיעור המרה לתשלום: <span class="en">10%-15%</span></li>
+            <li>• <span class="en">ARPU</span>: <span class="en">₪49</span>/חודש (<span class="en">B2C</span>) + <span class="en">₪5K-15K</span>/חודש (<span class="en">B2B</span>)</li>
+            <li>• <span class="en">Churn</span> חודשי: <span class="en">5%</span> (שנה 1) → <span class="en">3%</span> (שנה 3)</li>
+            <li>• עלות <span class="en">API</span> ממוצעת: <span class="en">₪2.5</span> לשיחה</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="margin-bottom:12px;">🚀 אבני דרך פיננסיות</h4>
+          <ul style="list-style:none;font-size:14px;color:var(--text-muted);display:flex;flex-direction:column;gap:6px;">
+            <li>• <strong style="color:var(--gold);"><span class="en">Q2 2027</span></strong> — נקודת <span class="en">Break-Even</span></li>
+            <li>• <strong style="color:var(--accent);"><span class="en">Q4 2027</span></strong> — <span class="en">ARR</span> של <span class="en">₪5.7M</span></li>
+            <li>• <strong style="color:var(--accent-light);"><span class="en">Q4 2028</span></strong> — <span class="en">ARR</span> של <span class="en">₪16.4M</span></li>
+            <li>• <span class="en">Gross Margin</span> יעד: <span class="en">85%+</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SLIDE 11: FOOTER / THANK YOU -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="slide" id="slide-10" style="min-height:70vh;">
+  <div class="bg-glow" style="width:800px;height:800px;background:#5DADE2;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+  <div class="bg-grid"></div>
+  <div class="slide-inner fade-in" style="text-align:center;">
+    <div style="font-size:72px;margin-bottom:16px;" class="bounce-icon">✦</div>
+    <h2 style="margin-bottom:12px;"><span class="gradient-text">נועם מוכן בשבילך</span></h2>
+    <p class="subtitle" style="margin:0 auto 36px;text-align:center;max-width:500px;">
+      תכנון פיננסי חכם, מותאם אישית, בעברית — בחינם.<br>השיחה הראשונה שלך מתחילה עכשיו.
+    </p>
+    <a href="https://investment-chat-psi.vercel.app/" target="_blank" class="btn btn-primary btn-glow btn-huge">
+      התחל שיחה עם נועם &larr;
+    </a>
+    <div class="cta-arrow">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12l7-7 7 7"/></svg>
+    </div>
+    <div style="margin-top:48px;font-size:13px;color:var(--text-muted);">
+      מצגת זו הוכנה לצורכי מידע בלבד ואינה מהווה הצעה למכירת ניירות ערך
+    </div>
+  </div>
+</section>
+
+<script>
+  // ─── Nav dots ───
+  const slides = document.querySelectorAll('.slide');
+  const navContainer = document.getElementById('navDots');
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot';
+    dot.onclick = () => slides[i].scrollIntoView({ behavior: 'smooth' });
+    navContainer.appendChild(dot);
+  });
+
+  // ─── Intersection observer for animations & nav ───
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        // Animate in
+        entry.target.querySelectorAll('.fade-in').forEach(el => el.classList.add('visible'));
+        // Update nav
+        const idx = Array.from(slides).indexOf(entry.target);
+        document.querySelectorAll('.nav-dot').forEach((d, i) => {
+          d.classList.toggle('active', i === idx);
+        });
+      }
+    });
+  }, { threshold: 0.3 });
+
+  slides.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
