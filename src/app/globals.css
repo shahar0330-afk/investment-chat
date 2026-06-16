@@ -1249,24 +1249,65 @@ body {
   .sidebar-toggle { display: flex; }
   .sidebar-collapse-btn { display: none; }
 
-  .messages { padding: 14px 16px; }
-  .input-area { padding: 10px 16px 16px; }
-  .attached-files { padding: 0 16px 8px; }
-  .header { padding: 14px 16px; }
+  .messages { padding: 14px 12px; }
+  .input-area { padding: 8px 12px 14px; }
+  .attached-files { padding: 0 12px 8px; }
+  .header { padding: 10px 14px; gap: 10px; }
+  .header-icon { width: 32px; height: 32px; font-size: 15px; }
+  .header-info h1 { font-size: 14px; }
+  .header-info p { font-size: 10px; }
+  .theme-toggle-btn, .print-btn { width: 30px; height: 30px; font-size: 14px; }
 
   .assets-panel {
     position: fixed;
     left: 0;
     top: 0;
     bottom: 0;
+    width: 85vw !important;
+    max-width: 320px;
     transform: translateX(-100%);
-    box-shadow: var(--glass-shadow-lg);
-    width: 300px;
-    opacity: 1;
-    pointer-events: auto;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: rgba(255,255,255,0.92) !important;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    box-shadow: none;
+    z-index: 50;
+    transition: transform 0.3s ease;
   }
 
-  .assets-panel.open { transform: translateX(0); width: 300px; }
+  .assets-panel.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 30px rgba(0,0,0,0.1);
+  }
+
+  .assets-toggle-btn {
+    z-index: 40;
+    left: 10px;
+    bottom: 80px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .welcome { padding: 20px 16px; gap: 8px; }
+  .welcome-icon { width: 56px; height: 56px; font-size: 28px; }
+  .welcome h2 { font-size: 22px; }
+  .welcome p { font-size: 13px; }
+  .welcome-chips { gap: 6px; max-width: 100%; }
+  .chip { padding: 8px 14px; font-size: 12px; }
+
+  .input-row { padding: 4px 4px 4px 10px; }
+  .input-row textarea { font-size: 14px; padding: 8px 6px; }
+  .send-btn { width: 34px; height: 34px; font-size: 15px; }
+  .upload-btn { width: 34px; height: 34px; font-size: 16px; }
+
+  .message { max-width: 94%; }
+  .message.assistant { max-width: 98%; }
+  .message-bubble { font-size: 14px; }
+  .message-avatar { width: 26px; height: 26px; font-size: 11px; }
+
+  .sidebar-collapse-btn { display: none; }
 }
 
 /* ─── Print button ─── */
