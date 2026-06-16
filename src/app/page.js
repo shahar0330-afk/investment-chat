@@ -161,18 +161,17 @@ export default function ChatPage() {
 
   // Check session on load
   useEffect(() => {
-    fetch('/api/auth/session').then(r => r.json()).then(data => {
+    fetch('/api/auth/session').then(r => r.json()).then(async (data) => {
       if (data.user) {
         setUser(data.user);
-        // Load conversations from server
-        fetch('/api/conversations').then(r => r.json()).then(convs => {
-          if (convs && !convs.error) setChats(convs);
-        });
+        // Load conversations and assets from server in parallel
+        const [convsRes, assetsRes] = await Promise.all([
+          fetch('/api/conversations').then(r => r.json()).catch(() => null),
+          fetch('/api/assets').then(r => r.json()).catch(() => null),
+        ]);
+        if (convsRes && !convsRes.error) setChats(convsRes);
+        if (Array.isArray(assetsRes)) setAssets(assetsRes);
       }
-      // Load assets from server
-      fetch('/api/assets').then(r => r.json()).then(a => {
-        if (Array.isArray(a)) setAssets(a);
-      }).catch(() => {});
       setActiveChatId(loadFromStorage('noam_active_chat', null));
       setLoaded(true);
     }).catch(() => setLoaded(true));
@@ -243,10 +242,13 @@ export default function ChatPage() {
         setAuthError(data.error);
       } else {
         setUser(data.user);
-        // Load conversations
-        const convRes = await fetch('/api/conversations');
-        const convs = await convRes.json();
-        if (convs && !convs.error) setChats(convs);
+        // Load conversations and assets
+        const [convRes, assetsRes] = await Promise.all([
+          fetch('/api/conversations').then(r => r.json()).catch(() => null),
+          fetch('/api/assets').then(r => r.json()).catch(() => null),
+        ]);
+        if (convRes && !convRes.error) setChats(convRes);
+        if (Array.isArray(assetsRes)) setAssets(assetsRes);
       }
     } catch {
       setAuthError('שגיאה בחיבור לשרת');
