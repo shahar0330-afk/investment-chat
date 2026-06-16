@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { cookies } from 'next/headers';
 import { TOOL_HANDLERS } from '@/lib/tools';
+import { getSessionUser, getUserMemory, saveUserMemory, getUserConversations } from '@/lib/db';
 
 const client = new Anthropic();
 
@@ -208,6 +210,11 @@ const SYSTEM_PROMPT = `אתה מתכנן פיננסי מוסמך (CFP) דיגי�
 8. **מספרים** — תמיד תן מספרים קונקרטיים (₪X/חודש, X%, ₪X סה"כ)
 9. **סדר עדיפויות:** ביטוח (רשת ביטחון) → פנסיה → חירום (3-6 חודשים) → חובות → השקעות
 10. **אל תמליץ על מוצר ספציפי** של חברת ביטוח — תן קווים מנחים ותגיד להשוות הצעות
+11. **🔴 תמונת נכסים — חשוב מאוד!** בכל פעם שהלקוח מזכיר נכס, חשבון בנק, פנסיה, חיסכון, משכנתא, הלוואה, תיק השקעות, או כל סכום כספי שקשור לרכושו — **חובה** להשתמש בכלי update_portfolio כדי לעדכן את תמונת הנכסים שלו. הלקוח רואה את זה בצד המסך שלו בזמן אמת. תעשה את זה **באופן אוטומטי** בלי לשאול — פשוט תעדכן. דוגמאות:
+    - "יש לי 50K בבנק" → update_portfolio עם bank
+    - "הפנסיה שלי במגדל, 400K" → update_portfolio עם pension
+    - "משכנתא של 800K" → update_portfolio עם loan
+    - "תיק מניות של 100K ב-IBI" → update_portfolio עם stocks
 
 ═══════════════════════════════════════
 ## ETFs ומדדים שימושיים
@@ -304,6 +311,34 @@ const TOOLS = [
       required: ['type', 'params'],
     },
   },
+  {
+    name: 'update_portfolio',
+    description: `עדכן את תמונת הנכסים של הלקוח. השתמש בכלי הזה בכל פעם שהלקוח מזכיר נכס, חשבון, חוב, או כל מידע פיננסי.
+קטגוריות: bank (חשבון בנק), stocks (תיק מניות), pension (פנסיה), gemel (קופת גמל), hishtalmut (קרן השתלמות), savings (חיסכון/פיקדון), realestate (נדל"ן), crypto (קריפטו), insurance (ביטוח מנהלים), cash (מזומן), loan (הלוואה/משכנתא), other (אחר).
+פעולות: add (הוספה), update (עדכון), remove (מחיקה).
+**חשוב:** השתמש בכלי הזה גם כשהלקוח מזכיר סכומים בעקיפין — למשל "המשכנתא שלי 800 אלף", "יש לי 200K בבנק", "הפנסיה שלי במגדל".`,
+    input_schema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['add', 'update', 'remove'], description: 'פעולה' },
+        items: {
+          type: 'array',
+          description: 'רשימת נכסים לעדכון',
+          items: {
+            type: 'object',
+            properties: {
+              category: { type: 'string', enum: ['bank', 'stocks', 'pension', 'gemel', 'hishtalmut', 'savings', 'realestate', 'crypto', 'insurance', 'cash', 'loan', 'other'], description: 'קטגוריה' },
+              name: { type: 'string', description: 'שם הנכס (למשל: לאומי, מגדל פנסיה, דירה ברמת גן)' },
+              value: { type: 'number', description: 'שווי ב-₪' },
+              detail: { type: 'string', description: 'פירוט נוסף (למשל: דמי ניהול 0.3%, ריבית 4.5%)' },
+            },
+            required: ['category', 'name', 'value'],
+          },
+        },
+      },
+      required: ['action', 'items'],
+    },
+  },
 ];
 
 async function executeTool(name, input) {
@@ -316,8 +351,114 @@ async function executeTool(name, input) {
   }
 }
 
+// ─── Memory extraction prompt ───
+const MEMORY_EXTRACT_PROMPT = `בהתבסס על השיחה הבאה, חלץ עובדות חשובות על המשתמש שכדאי לזכור לשיחות עתידיות.
+החזר JSON בפורמט הבא בלבד (בלי markdown):
+{"facts":["עובדה 1","עובדה 2"],"profile":{"age":null,"family":"","income":"","job":"","risk_level":"","goals":""}}
+מלא רק שדות שיש עליהם מידע. אם אין מידע חדש, החזר {"facts":[],"profile":{}}`;
+
+async function extractMemory(messages, existingMemory) {
+  try {
+    const lastMessages = messages.slice(-10);
+    const convo = lastMessages.map(m => `${m.role === 'user' ? 'משתמש' : 'נועם'}: ${typeof m.content === 'string' ? m.content : '[קובץ]'}`).join('\n');
+
+    const res = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: `זיכרון קיים:\n${JSON.stringify(existingMemory)}\n\nשיחה:\n${convo}\n\n${MEMORY_EXTRACT_PROMPT}`,
+      }],
+    });
+
+    const text = res.content[0]?.text || '';
+    const parsed = JSON.parse(text);
+
+    const mergedFacts = [...new Set([...(existingMemory.facts || []), ...(parsed.facts || [])])];
+    const mergedProfile = { ...(existingMemory.profile || {}), ...(parsed.profile || {}) };
+    // Remove null/empty values from profile
+    for (const key of Object.keys(mergedProfile)) {
+      if (!mergedProfile[key]) delete mergedProfile[key];
+    }
+
+    return { facts: mergedFacts.slice(-50), profile: mergedProfile };
+  } catch {
+    return existingMemory;
+  }
+}
+
 export async function POST(request) {
   const { messages } = await request.json();
+
+  // Get user, memory, and past conversations
+  const cookieStore = await cookies();
+  const token = cookieStore.get('session')?.value;
+  const user = await getSessionUser(token);
+  const memory = user ? await getUserMemory(user.id) : { facts: [], profile: {} };
+
+  // Build memory + history context
+  let memoryBlock = '';
+
+  // Full past conversations
+  if (user) {
+    const allConvs = await getUserConversations(user.id);
+    const pastChats = Object.values(allConvs)
+      .filter(c => c.messages && c.messages.length > 0)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+    if (pastChats.length > 0) {
+      memoryBlock += `\n\n═══════════════════════════════════════
+## כל השיחות הקודמות עם ${user.name}
+**יש לך גישה מלאה להיסטוריה.** תשתמש בה כדי לקשר מידע, לזכור מה דיברתם, ולהמשיך מאיפה שהפסקתם.\n\n`;
+
+      for (const chat of pastChats) {
+        const date = chat.updatedAt ? new Date(chat.updatedAt).toLocaleDateString('he-IL') : '';
+        memoryBlock += `### 📅 ${date} — ${chat.title || 'שיחה'}\n`;
+
+        for (const m of chat.messages) {
+          const role = m.role === 'user' ? user.name : 'נועם';
+          let text = '';
+          if (typeof m.content === 'string') {
+            text = m.content;
+          } else if (Array.isArray(m.content)) {
+            text = m.content.map(b => b.text || '').filter(Boolean).join(' ');
+          }
+          if (m._display) {
+            const disp = Array.isArray(m._display) ? m._display : [m._display];
+            const fileNames = disp.filter(b => b.type === 'file_info').map(b => `[📎 ${b.fileName}]`).join(' ');
+            if (fileNames) text = fileNames + ' ' + text;
+          }
+          if (text) memoryBlock += `**${role}:** ${text}\n`;
+        }
+        memoryBlock += '\n---\n\n';
+      }
+    }
+  }
+
+  // User profile and facts
+  if (memory.facts?.length > 0 || Object.keys(memory.profile || {}).length > 0) {
+    memoryBlock += `\n═══════════════════════════════════════
+## זיכרון — מה שאתה כבר יודע על ${user?.name || 'הלקוח'}
+`;
+    if (Object.keys(memory.profile || {}).length > 0) {
+      const p = memory.profile;
+      const parts = [];
+      if (p.age) parts.push(`גיל: ${p.age}`);
+      if (p.family) parts.push(`מצב משפחתי: ${p.family}`);
+      if (p.job) parts.push(`תעסוקה: ${p.job}`);
+      if (p.income) parts.push(`הכנסה: ${p.income}`);
+      if (p.risk_level) parts.push(`רמת סיכון: ${p.risk_level}`);
+      if (p.goals) parts.push(`יעדים: ${p.goals}`);
+      if (parts.length > 0) memoryBlock += `**פרופיל:** ${parts.join(' | ')}\n`;
+    }
+    if (memory.facts?.length > 0) {
+      memoryBlock += `**עובדות שנלמדו:**\n${memory.facts.map(f => `- ${f}`).join('\n')}`;
+    }
+  }
+
+  if (memoryBlock) {
+    memoryBlock += `\n\n**הנחיות:** השתמש בכל המידע הזה בצורה טבעית. אל תשאל שאלות שכבר יש לך תשובות עליהן. כשהלקוח שואל על שיחות קודמות — ציין תאריכים ותכנים. אם משהו השתנה, עדכן את הידע שלך.`;
+  }
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -334,9 +475,9 @@ export async function POST(request) {
       try {
         while (true) {
           const response = await client.messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-sonnet-4-6',
             max_tokens: 8192,
-            system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+            system: [{ type: 'text', text: SYSTEM_PROMPT + memoryBlock, cache_control: { type: 'ephemeral' } }],
             tools: TOOLS,
             messages: conversationMessages,
           });
@@ -364,19 +505,32 @@ export async function POST(request) {
 
           if (response.stop_reason === 'tool_use' && toolUses.length > 0) {
             for (const tool of toolUses) {
-              send({ type: 'tool_call', name: tool.name, input: tool.input });
+              if (tool.name === 'update_portfolio') {
+                // Send portfolio update to client
+                send({ type: 'portfolio_update', action: tool.input.action, items: tool.input.items });
+              } else {
+                send({ type: 'tool_call', name: tool.name, input: tool.input });
+              }
             }
 
             conversationMessages.push({ role: 'assistant', content: response.content });
 
             const toolResults = [];
             for (const tool of toolUses) {
-              const result = await executeTool(tool.name, tool.input);
-              toolResults.push({
-                type: 'tool_result',
-                tool_use_id: tool.id,
-                content: JSON.stringify(result),
-              });
+              if (tool.name === 'update_portfolio') {
+                toolResults.push({
+                  type: 'tool_result',
+                  tool_use_id: tool.id,
+                  content: JSON.stringify({ success: true, message: `עודכנו ${tool.input.items?.length || 0} נכסים בתמונת המצב` }),
+                });
+              } else {
+                const result = await executeTool(tool.name, tool.input);
+                toolResults.push({
+                  type: 'tool_result',
+                  tool_use_id: tool.id,
+                  content: JSON.stringify(result),
+                });
+              }
             }
 
             conversationMessages.push({ role: 'user', content: toolResults });
@@ -391,6 +545,15 @@ export async function POST(request) {
       } catch (error) {
         send({ type: 'error', content: error.message });
         controller.close();
+      }
+
+      // Extract memory in background (don't block response)
+      if (user) {
+        extractMemory(conversationMessages, memory).then(newMemory => {
+          if (newMemory.facts?.length > 0 || Object.keys(newMemory.profile || {}).length > 0) {
+            await saveUserMemory(user.id, newMemory);
+          }
+        }).catch(() => {});
       }
     },
   });
