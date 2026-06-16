@@ -549,7 +549,7 @@ export async function POST(request) {
 
       // Extract memory in background (don't block response)
       if (user) {
-        extractMemory(conversationMessages, memory).then(newMemory => {
+        extractMemory(conversationMessages, memory).then(async (newMemory) => {
           if (newMemory.facts?.length > 0 || Object.keys(newMemory.profile || {}).length > 0) {
             await saveUserMemory(user.id, newMemory);
           }
