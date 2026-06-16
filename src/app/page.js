@@ -132,6 +132,7 @@ function formatCurrency(num) {
 
 export default function ChatPage() {
   const [loaded, setLoaded] = useState(false);
+  const [theme, setTheme] = useState('light');
   const [user, setUser] = useState(null); // { id, name, email }
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
@@ -176,6 +177,17 @@ export default function ChatPage() {
       setLoaded(true);
     }).catch(() => setLoaded(true));
   }, []);
+
+  // Theme: load from localStorage on mount, sync to document
+  useEffect(() => {
+    const saved = localStorage.getItem('noam_theme');
+    if (saved === 'dark' || saved === 'light') setTheme(saved);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('noam_theme', theme);
+  }, [theme]);
 
   // Save chats to server (debounced)
   useEffect(() => {
@@ -507,7 +519,18 @@ export default function ChatPage() {
 
   // ─── Name modal ───
   if (!loaded) {
-    return null; // Loading from localStorage
+    return (
+      <div className="splash-screen">
+        <div className="splash-logo">✦</div>
+        <div className="splash-title">נועם</div>
+        <div className="splash-subtitle">מתכנן פיננסי AI</div>
+        <div className="splash-dots">
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+    );
   }
 
   if (!user) {
@@ -651,6 +674,14 @@ export default function ChatPage() {
             <h1>נועם</h1>
             <p>מתכנן פיננסי AI</p>
           </div>
+          <button
+            className="theme-toggle-btn"
+            onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+            title={theme === 'light' ? 'מצב כהה' : 'מצב בהיר'}
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+          <button className="print-btn" onClick={() => window.print()} title="ייצוא לPDF">🖨️</button>
         </header>
 
         <div className="messages">

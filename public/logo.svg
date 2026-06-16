@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="grad-main" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0E8C5A"/>
+      <stop offset="100%" stop-color="#1B6EC2"/>
+    </linearGradient>
+    <linearGradient id="grad-chart" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0E8C5A"/>
+      <stop offset="60%" stop-color="#1B6EC2"/>
+    </linearGradient>
+    <linearGradient id="grad-bubble" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B6EC2"/>
+      <stop offset="100%" stop-color="#0E8C5A"/>
+    </linearGradient>
+    <clipPath id="bubble-clip">
+      <path d="M40,30 Q40,12 58,12 L142,12 Q160,12 160,30 L160,110 Q160,128 142,128 L90,128 L70,148 L70,128 L58,128 Q40,128 40,110 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Chat bubble shape -->
+  <path d="M40,30 Q40,12 58,12 L142,12 Q160,12 160,30 L160,110 Q160,128 142,128 L90,128 L70,148 L70,128 L58,128 Q40,128 40,110 Z"
+        fill="url(#grad-bubble)" opacity="0.08"/>
+  <path d="M40,30 Q40,12 58,12 L142,12 Q160,12 160,30 L160,110 Q160,128 142,128 L90,128 L70,148 L70,128 L58,128 Q40,128 40,110 Z"
+        fill="none" stroke="url(#grad-bubble)" stroke-width="3" opacity="0.9"/>
+
+  <!-- Upward trend chart line inside bubble -->
+  <polyline points="58,98 78,88 96,94 114,72 132,56 146,38"
+            fill="none" stroke="url(#grad-chart)" stroke-width="4.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Small arrow tip at end of chart line -->
+  <polygon points="146,38 138,42 142,50" fill="#1B6EC2" opacity="0.85"/>
+
+  <!-- Subtle chart area fill -->
+  <path d="M58,98 L78,88 L96,94 L114,72 L132,56 L146,38 L146,98 Z"
+        fill="url(#grad-chart)" opacity="0.07"/>
+
+  <!-- Three small dots suggesting AI/data processing -->
+  <circle cx="70" cy="112" r="3" fill="#1B6EC2" opacity="0.5"/>
+  <circle cx="82" cy="112" r="3" fill="url(#grad-main)" opacity="0.5"/>
+  <circle cx="94" cy="112" r="3" fill="#0E8C5A" opacity="0.5"/>
+
+  <!-- Hebrew text "נועם" -->
+  <text x="100" y="182" text-anchor="middle"
+        font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+        font-size="30" font-weight="600" fill="url(#grad-main)"
+        letter-spacing="2">נועם</text>
+</svg>

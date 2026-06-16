@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { cookies } from 'next/headers';
 import { TOOL_HANDLERS } from '@/lib/tools';
-import { getSessionUser, getUserMemory, saveUserMemory, getUserConversations } from '@/lib/db';
+import { getSessionUser, getUserMemory, saveUserMemory, getUserConversations, getUserAssets } from '@/lib/db';
 
 const client = new Anthropic();
 
@@ -397,6 +397,7 @@ export async function POST(request) {
   const token = cookieStore.get('session')?.value;
   const user = await getSessionUser(token);
   const memory = user ? await getUserMemory(user.id) : { facts: [], profile: {} };
+  const assets = user ? await getUserAssets(user.id) : [];
 
   // Build memory + history context
   let memoryBlock = '';
@@ -456,6 +457,28 @@ export async function POST(request) {
     if (memory.facts?.length > 0) {
       memoryBlock += `**עובדות שנלמדו:**\n${memory.facts.map(f => `- ${f}`).join('\n')}`;
     }
+  }
+
+  // Inject assets portfolio
+  if (assets.length > 0) {
+    const categoryLabels = {
+      bank: 'חשבון בנק', stocks: 'תיק מניות', pension: 'פנסיה', gemel: 'קופת גמל',
+      hishtalmut: 'קרן השתלמות', savings: 'חיסכון/פיקדון', realestate: 'נדל"ן',
+      crypto: 'קריפטו', insurance: 'ביטוח מנהלים', cash: 'מזומן', loan: 'הלוואה/משכנתא', other: 'אחר',
+    };
+    memoryBlock += `\n\n═══════════════════════════════════════
+## תמונת נכסים נוכחית של ${user?.name || 'הלקוח'}
+| קטגוריה | שם | שווי |
+|---|---|---|
+`;
+    let totalNet = 0;
+    for (const a of assets) {
+      const label = categoryLabels[a.category] || a.category;
+      const val = a.category === 'loan' ? -Math.abs(a.value) : a.value;
+      totalNet += val;
+      memoryBlock += `| ${label} | ${a.name}${a.detail ? ` (${a.detail})` : ''} | ₪${Number(a.value).toLocaleString('he-IL')} |\n`;
+    }
+    memoryBlock += `\n**שווי נקי כולל: ₪${totalNet.toLocaleString('he-IL')}**`;
   }
 
   if (memoryBlock) {
