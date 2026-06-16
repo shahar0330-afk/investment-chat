@@ -779,15 +779,23 @@ body {
 
 /* ─── Assets Panel ─── */
 .assets-panel {
-  width: 320px;
+  width: 0;
   background: transparent;
   border: none;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: transform 0.3s ease;
+  transition: width 0.3s ease, opacity 0.2s ease;
   z-index: 20;
   overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.assets-panel.open {
+  width: 320px;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .assets-header {
@@ -1254,9 +1262,11 @@ body {
     transform: translateX(-100%);
     box-shadow: var(--glass-shadow-lg);
     width: 300px;
+    opacity: 1;
+    pointer-events: auto;
   }
 
-  .assets-panel.open { transform: translateX(0); }
+  .assets-panel.open { transform: translateX(0); width: 300px; }
 }
 
 /* ─── Print button ─── */

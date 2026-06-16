@@ -148,7 +148,7 @@ export default function ChatPage() {
   const [dragging, setDragging] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [assetsOpen, setAssetsOpen] = useState(false);
+  const [assetsOpen, setAssetsOpen] = useState(true);
   const [assets, setAssets] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newAsset, setNewAsset] = useState({ category: 'stocks', name: '', value: '', detail: '' });
