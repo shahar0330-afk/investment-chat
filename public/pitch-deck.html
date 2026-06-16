@@ -707,6 +707,40 @@
     transform: translateY(0);
   }
 
+  /* Stagger children animation */
+  .stagger {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .stagger.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Market bars animate width */
+  .market-bar-fill {
+    width: 0 !important;
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .market-bar-fill.animate {
+    width: var(--target-width) !important;
+  }
+
+  /* Cards pop in */
+  .card {
+    transition: all 0.3s, opacity 0.6s, transform 0.6s;
+  }
+
+  /* Stat number shimmer after counting */
+  @keyframes shimmer {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+
   /* CTA button glow animation */
   .btn-glow {
     position: relative;
@@ -840,28 +874,28 @@
     <div class="divider"></div>
 
     <div class="grid-2" style="margin-top:40px;">
-      <div class="problem-item">
+      <div class="problem-item stagger">
         <div class="problem-icon">💸</div>
         <div class="problem-text">
           <h4>דמי ניהול מופקעים</h4>
           <p>ישראלים מפסידים בממוצע ₪400,000+ לאורך חיי העבודה על דמי ניהול גבוהים בפנסיה — בלי לדעת</p>
         </div>
       </div>
-      <div class="problem-item">
+      <div class="problem-item stagger">
         <div class="problem-icon">🔒</div>
         <div class="problem-text">
           <h4>ייעוץ פיננסי = יקר</h4>
           <p>פגישה עם יועץ <span class="en">CFP</span> עולה <span class="en">₪2,000-500+</span>. רוב הציבור לא ניגש ליועץ מקצועי אף פעם</p>
         </div>
       </div>
-      <div class="problem-item">
+      <div class="problem-item stagger">
         <div class="problem-icon">🤯</div>
         <div class="problem-text">
           <h4>מורכבות מדהימה</h4>
           <p>מדרגות מס, קרנות פנסיה, ביטוחים, משכנתא — אנשים לא יודעים מאיפה להתחיל</p>
         </div>
       </div>
-      <div class="problem-item">
+      <div class="problem-item stagger">
         <div class="problem-icon">⏰</div>
         <div class="problem-text">
           <h4>ניגודי עניינים</h4>
@@ -885,19 +919,19 @@
 
     <div class="grid-4" style="margin-top:48px;">
       <div class="card" style="text-align:center;">
-        <div class="stat-number gradient-text">3.8M</div>
+        <div class="stat-number gradient-text" data-count="3.8" data-suffix="M">0</div>
         <div class="stat-label">משקי בית בישראל<br>ללא יועץ פיננסי</div>
       </div>
-      <div class="card" style="text-align:center;">
-        <div class="stat-number" style="color:var(--accent);"><span class="en">$2.1T</span></div>
+      <div class="card stagger" style="text-align:center;">
+        <div class="stat-number" style="color:var(--accent);" data-count="2.1" data-prefix="$" data-suffix="T">0</div>
         <div class="stat-label">נכסים פנסיוניים<br>מנוהלים בישראל</div>
       </div>
-      <div class="card" style="text-align:center;">
-        <div class="stat-number" style="color:var(--gold);"><span class="en">$27B</span></div>
+      <div class="card stagger" style="text-align:center;">
+        <div class="stat-number" style="color:var(--gold);" data-count="27" data-prefix="$" data-suffix="B">0</div>
         <div class="stat-label">שוק ה-<span class="en">WealthTech</span><br>העולמי (2025)</div>
       </div>
-      <div class="card" style="text-align:center;">
-        <div class="stat-number" style="color:var(--accent-light);"><span class="en">34%</span></div>
+      <div class="card stagger" style="text-align:center;">
+        <div class="stat-number" style="color:var(--accent-light);" data-count="34" data-suffix="%">0</div>
         <div class="stat-label">צמיחה שנתית<br><span class="en">CAGR</span> של <span class="en">AI</span> בפינטק</div>
       </div>
     </div>
@@ -981,32 +1015,32 @@
     <div class="divider"></div>
 
     <div class="grid-3" style="margin-top:40px;">
-      <div class="card feature-card">
+      <div class="card feature-card stagger">
         <div class="card-icon purple">📊</div>
         <h4>השקעות בזמן אמת</h4>
         <p>נתוני שוק חיים, ניתוח פונדמנטלי, סריקת סקטורים, <span class="en">ETFs</span> ומדדים — ישירות מ-<span class="en">Yahoo Finance</span></p>
       </div>
-      <div class="card feature-card">
+      <div class="card feature-card stagger">
         <div class="card-icon teal">🏦</div>
         <h4>פנסיה וחיסכון</h4>
         <p>ניתוח דמי ניהול, השוואת קרנות, קופות גמל, קרן השתלמות, ביטוח מנהלים</p>
       </div>
-      <div class="card feature-card">
+      <div class="card feature-card stagger">
         <div class="card-icon gold">🛡️</div>
         <h4>ביטוחים</h4>
         <p>ביטוח חיים, אובדן כושר עבודה, בריאות, רכב, דירה — ניתוח פערים והמלצות</p>
       </div>
-      <div class="card feature-card">
+      <div class="card feature-card stagger">
         <div class="card-icon green">🏠</div>
         <h4>משכנתא</h4>
         <p>חישוב החזרים, השוואת מסלולים (פריים/קל"צ/צמוד), מיחזור, מס רכישה</p>
       </div>
-      <div class="card feature-card">
+      <div class="card feature-card stagger">
         <div class="card-icon purple">💰</div>
         <h4>מיסוי</h4>
         <p>מדרגות מס, הטבות לא מנוצלות, ניכויים, זיכויים, מס שבח, תכנון מס לעצמאים</p>
       </div>
-      <div class="card feature-card">
+      <div class="card feature-card stagger">
         <div class="card-icon teal">📄</div>
         <h4>ניתוח מסמכים</h4>
         <p>העלאת <span class="en">PDF</span>, <span class="en">Word</span>, <span class="en">Excel</span>, תמונות — נועם קורא, מנתח ונותן תובנות על כל מסמך פיננסי</p>
@@ -1228,15 +1262,15 @@
     <div class="card" style="margin-top:32px;text-align:center;">
       <div class="grid-3">
         <div>
-          <div class="stat-number gradient-text">₪49</div>
+          <div class="stat-number gradient-text" data-count="49" data-prefix="₪">0</div>
           <div class="stat-label"><span class="en">ARPU</span> חודשי (פרימיום)</div>
         </div>
         <div>
-          <div class="stat-number" style="color:var(--accent);">85%</div>
+          <div class="stat-number" style="color:var(--accent);" data-count="85" data-suffix="%">0</div>
           <div class="stat-label"><span class="en">Gross Margin</span> צפוי</div>
         </div>
         <div>
-          <div class="stat-number" style="color:var(--gold);">₪2.5</div>
+          <div class="stat-number" style="color:var(--gold);" data-count="2.5" data-prefix="₪">0</div>
           <div class="stat-label">עלות שיחה ממוצעת (<span class="en">API</span>)</div>
         </div>
       </div>
@@ -1481,17 +1515,17 @@
     <div class="grid-3" style="margin-top:32px;">
       <div class="card" style="text-align:center;">
         <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">סה״כ שנה 1</div>
-        <div class="stat-number negative" style="font-size:32px;"><span class="en">-₪782K</span></div>
+        <div class="stat-number negative" style="font-size:32px;" data-count="782" data-prefix="-₪" data-suffix="K">0</div>
         <div style="font-size:12px;color:#C0392B;margin-top:4px;">שלב צמיחה והשקעה</div>
       </div>
       <div class="card" style="text-align:center;border-color:var(--accent);">
         <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">סה״כ שנה 2</div>
-        <div class="stat-number positive" style="font-size:32px;"><span class="en">+₪925K</span></div>
+        <div class="stat-number positive" style="font-size:32px;" data-count="925" data-prefix="+₪" data-suffix="K">0</div>
         <div style="font-size:12px;color:var(--accent);margin-top:4px;">🎯 נקודת איזון ב-<span class="en">Q2</span></div>
       </div>
       <div class="card" style="text-align:center;">
         <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">סה״כ שנה 3</div>
-        <div class="stat-number positive" style="font-size:32px;"><span class="en">+₪7.1M</span></div>
+        <div class="stat-number positive" style="font-size:32px;" data-count="7.1" data-prefix="+₪" data-suffix="M">0</div>
         <div style="font-size:12px;color:var(--accent-light);margin-top:4px;">רווחיות מלאה + הרחבה</div>
       </div>
     </div>
@@ -1557,20 +1591,85 @@
     navContainer.appendChild(dot);
   });
 
-  // ─── Intersection observer for animations & nav ───
+  // ─── Counting animation ───
+  function animateCount(el) {
+    if (el.dataset.counted) return;
+    el.dataset.counted = '1';
+
+    const target = parseFloat(el.dataset.count);
+    const prefix = el.dataset.prefix || '';
+    const suffix = el.dataset.suffix || '';
+    const isFloat = target % 1 !== 0;
+    const duration = 1800;
+    const start = performance.now();
+
+    function tick(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = target * ease;
+
+      const display = isFloat ? current.toFixed(1) : Math.round(current);
+      el.innerHTML = `<span class="en">${prefix}${display}${suffix}</span>`;
+
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        el.innerHTML = `<span class="en">${prefix}${isFloat ? target.toFixed(1) : target}${suffix}</span>`;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ─── Stagger children ───
+  function staggerChildren(container) {
+    const items = container.querySelectorAll('.stagger:not(.visible)');
+    items.forEach((item, i) => {
+      setTimeout(() => {
+        item.classList.add('visible');
+      }, i * 120);
+    });
+  }
+
+  // ─── Market bars ───
+  function animateBars(container) {
+    container.querySelectorAll('.market-bar-fill').forEach(bar => {
+      if (bar.classList.contains('animate')) return;
+      const w = bar.style.width;
+      bar.style.setProperty('--target-width', w);
+      bar.classList.add('animate');
+    });
+  }
+
+  // ─── Intersection observer for all animations ───
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        // Animate in
-        entry.target.querySelectorAll('.fade-in').forEach(el => el.classList.add('visible'));
-        // Update nav
-        const idx = Array.from(slides).indexOf(entry.target);
+        const slide = entry.target;
+
+        // Fade in
+        slide.querySelectorAll('.fade-in').forEach(el => el.classList.add('visible'));
+
+        // Stagger children
+        staggerChildren(slide);
+
+        // Count numbers
+        slide.querySelectorAll('[data-count]').forEach((el, i) => {
+          setTimeout(() => animateCount(el), i * 200);
+        });
+
+        // Market bars
+        setTimeout(() => animateBars(slide), 400);
+
+        // Update nav dots
+        const idx = Array.from(slides).indexOf(slide);
         document.querySelectorAll('.nav-dot').forEach((d, i) => {
           d.classList.toggle('active', i === idx);
         });
       }
     });
-  }, { threshold: 0.3 });
+  }, { threshold: 0.25 });
 
   slides.forEach(s => observer.observe(s));
 </script>
